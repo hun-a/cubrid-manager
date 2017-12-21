@@ -292,32 +292,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	public void makeResult(CUBRIDResultSetProxy rs) throws SQLException {
 		fillColumnData(rs);
 		fillTableItemData(rs);
-		fillTextData();
-	}
-
-	public void fillTextData() {
-		int columnCount = 0;
-		StringBuilder sb = new StringBuilder();
-		if (allColumnList != null) {
-			columnCount = allColumnList.size();
-		}
-		if (allDataList != null) {
-			for (Map<String, CellValue> data : allDataList) {
-				for (int i = 1; i <= columnCount; i++) {
-					CellValue value = data.get(String.valueOf(i));
-					if (value != null && value.getStringValue() != null) {
-						sb.append(value.getStringValue());
-					}
-					if (i + 1 <= columnCount) {
-						sb.append("\t");
-					}
-				}
-				sb.append(StringUtil.NEWLINE);
-			}
-		}
-		queryInfo = new QueryInfo(allDataList.size(), pageLimit);
-		queryInfo.setCurrentPage(1);
-		textData = sb.toString().replace("\n", StringUtil.NEWLINE);
 	}
 
 	/**
@@ -2135,7 +2109,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 					matchedPointList.add(ponit);
 				}
 			}
-
 			itemNo++;
 		}
 
@@ -2144,17 +2117,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		}
 
 		tblResult.setTopIndex(begin);
-
-		//recover and display the inserted records which have not been committed yet.
-//		for (Map.Entry<String,Map<String,Object>> itemEntry : allInsertedItemList.entrySet()) {
-//			TableItem itemNew = new TableItem(tblResult, SWT.MULTI);
-//			changeInsertedItemStyle(itemNew);
-//			itemNew.setData(NEW_RECORD_FLAG, itemEntry.getKey());
-//			int colCount = tblResult.getColumnCount();
-//			for (int i = 1; i < colCount; i++) {
-//				itemNew.setText(i, "" + itemEntry.getValue().get("" + (i - 1)));
-//			}
-//		}
 
 		if (delRecordItem != null && !delRecordItem.isDisposed()) {
 			delRecordItem.setEnabled(false);

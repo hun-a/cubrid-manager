@@ -2005,6 +2005,30 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * make table item by the data in allDataList
 	 */
 	public void makeItem() {
+		makeItemInit();
+
+		int begin = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize();
+		handleRowData(begin, 0);
+	}
+
+	private  void makeItemInit() {
+		handleSingleTableQuery();
+
+		if (insertRecordItem != null && !insertRecordItem.isDisposed()) {
+			insertRecordItem.setEnabled(getEditable() && isEditMode());
+		}
+
+		if (delRecordItem != null && !delRecordItem.isDisposed()) {
+			delRecordItem.setEnabled(false);
+		}
+
+		disableActions();
+		clearModifiedLog();
+		tblResult.removeAll();
+		rsToItemMap.clear();
+	}
+
+	private void handleSingleTableQuery() {
 		isSingleTableQuery = false;
 
 		if (!queryEditor.isCollectExecStats()) {
@@ -2041,24 +2065,14 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 				}
 			}
 		}
+	}
 
-		if (insertRecordItem != null && !insertRecordItem.isDisposed()) {
-			insertRecordItem.setEnabled(getEditable() && isEditMode());
-		}
-
-		disableActions();
-		clearModifiedLog();
-		tblResult.removeAll();
-		rsToItemMap.clear();
-
-		int begin = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize();
+	private void handleRowData(int begin, int itemStartNo) {
 		int last = begin + queryInfo.getPageSize();
-
 		List<Point> matchedPointList = new ArrayList<Point>();
-
-		int itemNo = 0;
 		int index = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize() + 1;
-		for (int i = 0; allDataList != null && i < last && i < queryInfo.getTotalRs(); i++) {
+
+		for (int i = itemStartNo; allDataList != null && i < last && i < queryInfo.getTotalRs(); i++) {
 			Map<String, CellValue> dataMap = allDataList.get(i);
 
 			// filter the data
@@ -2073,43 +2087,8 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			item.setData(dataMap);
 			makeItemValue(item, dataMap);
 			item.setBackground(0, Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
-
-			int columnNum = 1;
-			for (int j = 0; allColumnList != null && j < allColumnList.size(); j++, columnNum++) {
-				ColumnInfo columnInfo = allColumnList.get(j);
-				String columnIndex = columnInfo.getIndex();
-
-				// display compare data for multiple queries
-				if (multiResultsCompare == true && baseQueryExecuter != null) {
-					compareTableItemData(item, i, columnIndex);
-				}
-
-				Object colValue = dataMap.get(columnIndex);
-				String showValue = null;
-				if (colValue instanceof String) {
-					showValue = (String) colValue;
-				} else if (colValue instanceof CellValue) {
-					showValue = ((CellValue) colValue).getShowValue();
-				}
-
-				if (showValue == null) {
-					item.setText(columnNum, DataType.NULL_EXPORT_FORMAT);
-					item.setData((columnNum) + "", DataType.VALUE_NULL);
-				} else {
-					item.setText(columnNum, showValue);
-				}
-
-				if (DataType.isSelfDefinedData(showValue)) {
-					item.setBackground(columnNum, Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
-				}
-
-				// Select the matched data
-				if (showValue != null && filterResultContrItem.isMatch(filterSetting, showValue, columnInfo)) {
-					Point ponit = new Point(j + 1, itemNo);
-					matchedPointList.add(ponit);
-				}
-			}
-			itemNo++;
+			handleColumnData(item, itemStartNo, dataMap, i, matchedPointList);
+			itemStartNo++;
 		}
 
 		if (filterResultContrItem.isUseFilter()) {
@@ -2117,9 +2096,44 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		}
 
 		tblResult.setTopIndex(begin);
+	}
 
-		if (delRecordItem != null && !delRecordItem.isDisposed()) {
-			delRecordItem.setEnabled(false);
+	private void handleColumnData(TableItem item, int itemNo, Map<String, CellValue> dataMap,
+			int dataMapIndex, List<Point> matchedPointList) {
+		int columnNum = 1;
+		for (int j = 0; allColumnList != null && j < allColumnList.size(); j++, columnNum++) {
+			ColumnInfo columnInfo = allColumnList.get(j);
+			String columnIndex = columnInfo.getIndex();
+
+			// display compare data for multiple queries
+			if (multiResultsCompare == true && baseQueryExecuter != null) {
+				compareTableItemData(item, dataMapIndex, columnIndex);
+			}
+
+			Object colValue = dataMap.get(columnIndex);
+			String showValue = null;
+			if (colValue instanceof String) {
+				showValue = (String) colValue;
+			} else if (colValue instanceof CellValue) {
+				showValue = ((CellValue) colValue).getShowValue();
+			}
+
+			if (showValue == null) {
+				item.setText(columnNum, DataType.NULL_EXPORT_FORMAT);
+				item.setData((columnNum) + "", DataType.VALUE_NULL);
+			} else {
+				item.setText(columnNum, showValue);
+			}
+
+			if (DataType.isSelfDefinedData(showValue)) {
+				item.setBackground(columnNum, Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
+			}
+
+			// Select the matched data
+			if (showValue != null && filterResultContrItem.isMatch(filterSetting, showValue, columnInfo)) {
+				Point ponit = new Point(j + 1, itemNo);
+				matchedPointList.add(ponit);
+			}
 		}
 	}
 

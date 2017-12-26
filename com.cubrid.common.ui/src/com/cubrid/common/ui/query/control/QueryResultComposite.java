@@ -384,7 +384,7 @@ public class QueryResultComposite extends Composite implements ISubTabSelection 
 		// fill the view form action on top right corner
 		ToolBar topRightToolBar = new ToolBar(viewForm, SWT.FLAT);
 		ToolBarManager toolBarManager = new ToolBarManager(topRightToolBar);
-		result.makeActions(toolBarManager, resultTable);
+		result.makeActions(toolBarManager);
 		
 		// fill the view form action on top right corner
 		ToolBar topLeftToolBar = new ToolBar(viewForm, SWT.FLAT);

@@ -119,6 +119,7 @@ import com.cubrid.common.ui.query.action.InputMethodAction;
 import com.cubrid.common.ui.query.action.LastAction;
 import com.cubrid.common.ui.query.action.NextAction;
 import com.cubrid.common.ui.query.action.PasteAction;
+import com.cubrid.common.ui.query.action.PrevAction;
 import com.cubrid.common.ui.query.control.tunemode.TuneModeModel;
 import com.cubrid.common.ui.query.dialog.ExportResultDialog;
 import com.cubrid.common.ui.query.dialog.RowDetailDialog;
@@ -188,6 +189,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	private final QueryEditorPart queryEditor;
 	private QueryInfo queryInfo = null;
+	private Action prevPageAction = null;
 	private Action nextPageAction = null;
 	private Action lastPageAction = null;
 	private FilterResultContrItem filterResultContrItem;
@@ -599,11 +601,13 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 *
 	 * @param toolBarManager ToolBarManager
 	 */
-	public void makeActions(ToolBarManager toolBarManager, Table resultTable) {
+	public void makeActions(ToolBarManager toolBarManager) {
 		toolBarManager.add(filterResultContrItem);
 		toolBarManager.add(new Separator());
+		prevPageAction = new PrevAction(this);
 		lastPageAction = new LastAction(this);
 		nextPageAction = new NextAction(this);
+		toolBarManager.add(prevPageAction);
 		toolBarManager.add(nextPageAction);
 		toolBarManager.add(lastPageAction);
 		updateActions();
@@ -614,6 +618,9 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * Set the action disabled
 	 */
 	private void disableActions() {
+		if (prevPageAction != null) {
+			prevPageAction.setEnabled(false);
+		}
 		if (lastPageAction != null) {
 			lastPageAction.setEnabled(false);
 		}
@@ -627,11 +634,13 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 */
 	public void updateActions() {
 		if (queryInfo.getCurrentPage() >= queryInfo.getPages()) {
+			prevPageAction.setEnabled(false);
 			lastPageAction.setEnabled(false);
 			nextPageAction.setEnabled(false);
 		} else {
 			lastPageAction.setEnabled(true);
 			nextPageAction.setEnabled(true);
+			prevPageAction.setEnabled(true);
 		}
 	}
 
@@ -2135,6 +2144,56 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 				matchedPointList.add(ponit);
 			}
 		}
+	}
+
+	/**
+	 * This is temporary method for next action
+	 */
+	public void makeNextItem() {
+		makeItemInit();
+		int begin = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize();
+		handleRowData(begin, begin);
+	}
+
+	public void makePrevItem() {
+		makeItemInit();
+		handleRowDataAsReverse();
+	}
+
+	/**
+	 * This is temporary method for prev action
+	 */
+	private void handleRowDataAsReverse() {
+		int itemStartNo = 0;
+		int begin = queryInfo.getCurrentPage() > 1 ? (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize() : 1;
+		int last = begin + queryInfo.getPageSize();
+		List<Point> matchedPointList = new ArrayList<Point>();
+		int index = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize() + 1;
+
+		for (int i = begin; allDataList != null && i < last && i < queryInfo.getTotalRs(); i++) {
+			Map<String, CellValue> dataMap = allDataList.get(i);
+
+			// filter the data
+			boolean isAccepted = filterResultContrItem.select(dataMap, filterSetting);
+			if (!isAccepted) {
+				continue;
+			}
+
+			TableItem item = new TableItem(tblResult, SWT.MULTI);
+			rsToItemMap.put(""+item.hashCode(), ""+i);
+			item.setText(0, String.valueOf(index + i - begin));
+			item.setData(dataMap);
+			makeItemValue(item, dataMap);
+			item.setBackground(0, Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
+			handleColumnData(item, itemStartNo, dataMap, i, matchedPointList);
+			itemStartNo++;
+		}
+
+		if (filterResultContrItem.isUseFilter()) {
+			selectableSupport.setSelection(matchedPointList);
+		}
+
+		tblResult.setTopIndex(begin);
 	}
 
 	/**

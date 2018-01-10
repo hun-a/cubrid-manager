@@ -29,7 +29,9 @@
 package com.cubrid.common.ui.query.control;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -120,6 +122,7 @@ import com.cubrid.common.ui.query.action.LastAction;
 import com.cubrid.common.ui.query.action.NextAction;
 import com.cubrid.common.ui.query.action.PasteAction;
 import com.cubrid.common.ui.query.action.PrevAction;
+import com.cubrid.common.ui.query.control.model.RecordInfo;
 import com.cubrid.common.ui.query.control.tunemode.TuneModeModel;
 import com.cubrid.common.ui.query.dialog.ExportResultDialog;
 import com.cubrid.common.ui.query.dialog.RowDetailDialog;
@@ -130,6 +133,7 @@ import com.cubrid.common.ui.spi.ResourceManager;
 import com.cubrid.common.ui.spi.action.ActionManager;
 import com.cubrid.common.ui.spi.action.FocusAction;
 import com.cubrid.common.ui.spi.model.CubridDatabase;
+import com.cubrid.common.ui.spi.persist.PersistUtils;
 import com.cubrid.common.ui.spi.persist.QueryOptions;
 import com.cubrid.common.ui.spi.progress.ExecTaskWithProgress;
 import com.cubrid.common.ui.spi.table.CellValue;
@@ -233,6 +237,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private String queryPlanLog;
 	private String textData = "";
 	private List<String> columnTableNames;
+	private String asyncFileLocation;
 
 	public QueryExecuter(QueryEditorPart qe, int idx, String query, CubridDatabase cubridDatabase, DBConnection con,
 			List<PstmtParameter> parameterList, String orignQuery) {
@@ -277,6 +282,8 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			formater4Float.setMaximumIntegerDigits(38);
 			formater4Float.setMaximumFractionDigits(7);
 		}
+		asyncFileLocation = PersistUtils.getGlobalPreference(CommonUIPlugin.PLUGIN_ID)
+				.get("RECENT_WORKSPACES", null) + File.separator + "temp" + File.separator;
 	}
 
 	public QueryExecuter(QueryEditorPart qe, int idx, String query, CubridDatabase cubridDatabase,
@@ -293,7 +300,19 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 */
 	public void makeResult(CUBRIDResultSetProxy rs) throws SQLException {
 		fillColumnData(rs);
-		fillTableItemData(rs);
+		fillTableItemData(rs, false);
+	}
+
+	/**
+	 * Making table datas from fetched records to files as async
+	 *
+	 * @param rs CUBRIDResultSetProxy
+	 * @throws SQLException if failed
+	 */
+	public void makeResultAsync(CUBRIDResultSetProxy rs) throws SQLException {
+		fillColumnData(rs);
+		// save the results to file as async
+		fillTableItemData(rs, true);
 	}
 
 	/**
@@ -572,21 +591,36 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * @param rs CUBRIDResultSetProxy
 	 * @throws SQLException if failed
 	 */
-	private void fillTableItemData(CUBRIDResultSetProxy rs) throws SQLException {
+	private void fillTableItemData(CUBRIDResultSetProxy rs, boolean isAsync) throws SQLException {
 		cntRecord = 0;
-		int limit = recordLimit;
+		int index = isAsync ? 0 : recordLimit;
 		while (rs.next()) {
 			cntRecord++;
 			//add item data to the end of list
 			addTableItemData(rs, -1);
-			resultSetDataCache.AddData(BuildCurrentRowData(rs));
-			if (recordLimit > 0 && cntRecord >= limit && multiQuerySql == null) {
-				final String msg = Messages.bind(Messages.tooManyRecord, limit);
-				showQueryTip(msg);
-				if (isEnd) {
-					break;
-				} else {
-					limit += recordLimit;
+			if (isAsync) {
+				if (recordLimit > 0 && cntRecord >= recordLimit && multiQuerySql == null) {
+					final List<Map<String, CellValue>> list =
+							(List<Map<String, CellValue>>)((ArrayList<Map<String, CellValue>>) allDataList)
+							.clone();
+					allDataList = null;
+					allDataList = new ArrayList<Map<String, CellValue>>();
+
+					final String filePath = asyncFileLocation + Long.toString(System.currentTimeMillis());
+					final int fileIndex = index++;
+					writeRecordsToFile(list, queryEditor.getEditorTabName(), fileIndex, filePath);
+
+					cntRecord = 0;
+				}
+			} else {
+				if (recordLimit > 0 && cntRecord >= index && multiQuerySql == null) {
+					final String msg = Messages.bind(Messages.tooManyRecord, index);
+					showQueryTip(msg);
+					if (isEnd) {
+						break;
+					} else {
+						index += recordLimit;
+					}
 				}
 			}
 		}
@@ -594,6 +628,41 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			queryInfo = new QueryInfo(cntRecord, pageLimit);
 			queryInfo.setCurrentPage(1);
 		}
+	}
+
+	private void writeRecordsToFile(final Object obj, final String id, final int index, final String path) {
+		Display.getDefault().asyncExec(new Runnable() {
+
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				ObjectOutputStream out = null;
+
+				try {
+					out = new ObjectOutputStream(new FileOutputStream(path));
+					out.writeObject(obj);
+					out.flush();
+
+					synchronized (this) {
+						setFileName(id, index, path);
+					}
+				} catch (IOException e) {
+					LOGGER.error(e.getMessage());
+				} finally {
+					try {
+						if (out != null) {
+							out.close();
+						}
+					} catch (IOException e) {
+						LOGGER.error(e.getMessage());
+					}
+				}
+			}
+		});
+	}
+
+	private void setFileName(String key, int index, String value) {
+		RecordInfo.getInstance().setFileName(key, index, value);
 	}
 
 	/**
@@ -1847,7 +1916,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			if (start == 1) {
 				makeResult(rs);
 			} else {
-				fillTableItemData(rs);
+				fillTableItemData(rs, false);
 			}
 
 			// collect statistics and query plan on tune mode
@@ -2332,8 +2401,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 		item.setText(0, String.valueOf(maxIndex));
 		item.setBackground(0, Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
-		//item.setBackground(1, Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
-		//item.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_INFO_BACKGROUND));
 		tblResult.showItem(item);
 	}
 

@@ -3185,6 +3185,15 @@ public class QueryEditorPart extends
 	}
 
 	/**
+	 * Get the Editor's tab name
+	 *
+	 * @return editorTabNameOriginal String
+	 */
+	public String getEditorTabName() {
+		return editorTabNameOriginal;
+	}
+
+	/**
 	 * Get the SQL string on editor
 	 *
 	 * @return SQL String

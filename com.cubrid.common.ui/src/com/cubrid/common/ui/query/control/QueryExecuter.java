@@ -113,6 +113,7 @@ import com.cubrid.common.core.util.QuerySyntax;
 import com.cubrid.common.core.util.QueryUtil;
 import com.cubrid.common.core.util.StringUtil;
 import com.cubrid.common.ui.CommonUIPlugin;
+import com.cubrid.common.ui.common.dialog.SelectWorkspaceDialog;
 import com.cubrid.common.ui.cubrid.table.dialog.PstmtParameter;
 import com.cubrid.common.ui.cubrid.table.export.ResultSetDataCache;
 import com.cubrid.common.ui.query.Messages;
@@ -282,8 +283,13 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			formater4Float.setMaximumIntegerDigits(38);
 			formater4Float.setMaximumFractionDigits(7);
 		}
-		asyncFileLocation = PersistUtils.getGlobalPreference(CommonUIPlugin.PLUGIN_ID)
-				.get("RECENT_WORKSPACES", null) + File.separator + "temp" + File.separator;
+
+		asyncFileLocation = SelectWorkspaceDialog.getLastSetWorkspaceDirectory()
+				+ File.separator + "temp" + File.separator;
+		File f = new File(asyncFileLocation);
+		if (!f.isDirectory()) {
+			f.mkdir();
+		}
 	}
 
 	public QueryExecuter(QueryEditorPart qe, int idx, String query, CubridDatabase cubridDatabase,

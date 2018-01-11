@@ -28,6 +28,7 @@
  */
 package com.cubrid.common.ui.spi.table;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +39,8 @@ import java.util.Map;
  * @author pangqiren
  * @version 1.0 - 2012-7-23 created by pangqiren
  */
-public class CellValue {
+public class CellValue implements Serializable {
+	private static final long serialVersionUID = 6256628990873561491L;
 	private static final String KEY_FILE_CHARSET = "file_charset";
 	private final Map<String, Object> properties = new HashMap<String, Object>();
 	private String showValue;

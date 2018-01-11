@@ -29,8 +29,10 @@
 package com.cubrid.common.ui.query.control;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.sql.Blob;
@@ -238,6 +240,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private String queryPlanLog;
 	private String textData = "";
 	private List<String> columnTableNames;
+	private RecordInfo recordInfo;
 	private String asyncFileLocation;
 
 	public QueryExecuter(QueryEditorPart qe, int idx, String query, CubridDatabase cubridDatabase, DBConnection con,
@@ -284,6 +287,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			formater4Float.setMaximumFractionDigits(7);
 		}
 
+		recordInfo = RecordInfo.getInstance();
 		asyncFileLocation = SelectWorkspaceDialog.getLastSetWorkspaceDirectory()
 				+ File.separator + "temp" + File.separator;
 		File f = new File(asyncFileLocation);
@@ -668,7 +672,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	}
 
 	private void setFileName(String key, int index, String value) {
-		RecordInfo.getInstance().setFileName(key, index, value);
+		recordInfo.setFileName(key, index, value);
 	}
 
 	/**
@@ -2155,9 +2159,11 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		int last = begin + queryInfo.getPageSize();
 		List<Point> matchedPointList = new ArrayList<Point>();
 		int index = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize() + 1;
+		String id = queryEditor.getEditorTabName();
+		List<Map<String, CellValue>> list = readFromFile(id, begin);
 
-		for (int i = itemStartNo; allDataList != null && i < last && i < queryInfo.getTotalRs(); i++) {
-			Map<String, CellValue> dataMap = allDataList.get(i);
+		for (int i = itemStartNo; !list.isEmpty() && i < last && i < queryInfo.getTotalRs(); i++) {
+			Map<String, CellValue> dataMap = list.get(i);
 
 			// filter the data
 			boolean isAccepted = filterResultContrItem.select(dataMap, filterSetting);
@@ -2180,6 +2186,29 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		}
 
 		tblResult.setTopIndex(begin);
+	}
+
+	private List<Map<String, CellValue>> readFromFile(String id, int begin) {
+		String fileName = recordInfo.getFileNameByKeyAndIndex(id, begin);
+		ObjectInputStream in = null;
+
+		try {
+			in = new ObjectInputStream(new FileInputStream(fileName));
+			return (List<Map<String, CellValue>>)in.readObject();
+		} catch (IOException e) {
+			LOGGER.error(e.getMessage());
+		} catch (ClassNotFoundException e) {
+			LOGGER.error(e.getMessage());
+		} finally {
+			try {
+				if (in != null) {
+					in.close();
+				}
+			} catch (IOException e) {
+				LOGGER.error(e.getMessage());
+			}
+		}
+		return null;
 	}
 
 	private void handleColumnData(TableItem item, int itemNo, Map<String, CellValue> dataMap,

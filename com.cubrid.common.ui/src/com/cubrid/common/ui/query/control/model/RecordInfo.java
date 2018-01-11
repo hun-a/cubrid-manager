@@ -55,4 +55,8 @@ public class RecordInfo {
 	public int size(String key) {
 		return info.get(key).size() - 1;
 	}
+
+	public boolean isExists(String key) {
+		return info.get(key) != null;
+	}
 }

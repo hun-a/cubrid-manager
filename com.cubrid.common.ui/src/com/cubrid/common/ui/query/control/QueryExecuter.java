@@ -136,7 +136,6 @@ import com.cubrid.common.ui.spi.ResourceManager;
 import com.cubrid.common.ui.spi.action.ActionManager;
 import com.cubrid.common.ui.spi.action.FocusAction;
 import com.cubrid.common.ui.spi.model.CubridDatabase;
-import com.cubrid.common.ui.spi.persist.PersistUtils;
 import com.cubrid.common.ui.spi.persist.QueryOptions;
 import com.cubrid.common.ui.spi.progress.ExecTaskWithProgress;
 import com.cubrid.common.ui.spi.table.CellValue;
@@ -238,10 +237,10 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	private String statsLog;
 	private String queryPlanLog;
-	private String textData = "";
 	private List<String> columnTableNames;
 	private RecordInfo recordInfo;
 	private String asyncFileLocation;
+	private final StatusChecker status;
 
 	public QueryExecuter(QueryEditorPart qe, int idx, String query, CubridDatabase cubridDatabase, DBConnection con,
 			List<PstmtParameter> parameterList, String orignQuery) {
@@ -287,6 +286,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			formater4Float.setMaximumFractionDigits(7);
 		}
 
+		status = new StatusChecker();
 		recordInfo = RecordInfo.getInstance();
 		asyncFileLocation = SelectWorkspaceDialog.getLastSetWorkspaceDirectory()
 				+ File.separator + "temp" + File.separator;
@@ -3559,5 +3559,26 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	public ResultSetDataCache getTableDataCache() {
 		return resultSetDataCache;
+	}
+
+	class StatusChecker {
+		private boolean hasFirstRecords = false;
+		private boolean isDone;
+
+		public synchronized void setFirstRecords(boolean hasFirstRecords) {
+			this.hasFirstRecords = hasFirstRecords;
+		}
+
+		public synchronized boolean hasFirstRecords() {
+			return hasFirstRecords;
+		}
+
+		public synchronized void setDone(boolean isDone) {
+			this.isDone = isDone;
+		}
+
+		public synchronized boolean isDone() {
+			return isDone;
+		}
 	}
 }

@@ -604,7 +604,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private void fillTableItemData(CUBRIDResultSetProxy rs, boolean isAsync) throws SQLException {
 		cntRecord = 0;
 		int index = isAsync ? 0 : recordLimit;
-		while (rs.next()) {
+		while (rs.next()) {	// need to change this logic as async.
 			cntRecord++;
 			//add item data to the end of list
 			addTableItemData(rs, -1);
@@ -2273,9 +2273,11 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		int last = begin + queryInfo.getPageSize();
 		List<Point> matchedPointList = new ArrayList<Point>();
 		int index = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize() + 1;
+		String id = queryEditor.getEditorTabName();
+		List<Map<String, CellValue>> list = readFromFile(id, begin);
 
-		for (int i = begin; allDataList != null && i < last && i < queryInfo.getTotalRs(); i++) {
-			Map<String, CellValue> dataMap = allDataList.get(i);
+		for (int i = begin; !list.isEmpty() && i < last && i < queryInfo.getTotalRs(); i++) {
+			Map<String, CellValue> dataMap = list.get(i);
 
 			// filter the data
 			boolean isAccepted = filterResultContrItem.select(dataMap, filterSetting);
@@ -3554,7 +3556,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	public void setColumnTableNames(List<String> tableNames) {
 		this.columnTableNames = tableNames;
 	}
-	
+
 	public ResultSetDataCache getTableDataCache() {
 		return resultSetDataCache;
 	}

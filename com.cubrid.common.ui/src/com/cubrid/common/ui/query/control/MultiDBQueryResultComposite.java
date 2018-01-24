@@ -500,9 +500,9 @@ class MultiQueryThread implements
 						}
 						List<String> columnTableNameList = UIQueryUtil.loadColumnTableNameList(stmt);
 						result = createQueryExecutor(queryEditor, cntResults, sql, database, connection, orignSQL, columnTableNameList);
-						result.makeResult(rs);
+						result.makeResultAsync(rs);
 						String queryMsg = Messages.bind(Messages.querySeq, order) + "[ " + elapsedTimeStr + " "
-								+ Messages.second + " , " + Messages.totalRows + " : " + result.cntRecord + " ]"
+								+ Messages.second + " , " + Messages.totalRows + " : " + result.getQueryInfo().getTotalRs() + " ]"
 								+ StringUtil.NEWLINE;
 						result.setQueryMsg(queryMsg);
 						sqlHistoryDetail.setExecuteInfo(queryMsg);

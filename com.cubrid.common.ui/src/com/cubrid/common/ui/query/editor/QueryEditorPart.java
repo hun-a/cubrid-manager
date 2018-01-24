@@ -2791,7 +2791,7 @@ public class QueryEditorPart extends
 							result = createQueryExecutor(queryEditor, cntResults, sql, database,
 									parameterList, orignSQL, tableNames);
 
-							result.makeResult(rs);
+							result.makeResultAsync(rs);
 
 							// collect statistics and query plan on tune mode
 							StringBuilder statLogs = new StringBuilder();
@@ -2993,9 +2993,9 @@ public class QueryEditorPart extends
 						cntResults++;
 					}
 
-					QueryUtil.freeQuery(pStmt, rs);
-					pStmt = null;
-					rs = null;
+//					QueryUtil.freeQuery(pStmt, rs);
+//					pStmt = null;
+//					rs = null;
 
 					// To save the recently used SQL
 					// The user don't have to use multiple executed sql for the auto completion.
@@ -3061,9 +3061,9 @@ public class QueryEditorPart extends
 							queryResultComposite = combinedQueryComposite.getQueryResultComp();
 						} else if (queryResultTabFolder != null
 								&& !queryResultTabFolder.isDisposed()) {
-							QueryUtil.freeQuery(pStmt, rs);
-							pStmt = null;
-							rs = null;
+//							QueryUtil.freeQuery(pStmt, rs);
+//							pStmt = null;
+//							rs = null;
 
 							queryResultComposite = combinedQueryComposite.getQueryResultComp();
 							queryResultComposite.disposeAllResult();

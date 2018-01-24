@@ -602,42 +602,87 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * @throws SQLException if failed
 	 */
 	private void fillTableItemData(CUBRIDResultSetProxy rs, boolean isAsync) throws SQLException {
-		cntRecord = 0;
-		int index = isAsync ? 0 : recordLimit;
+		int totalRs = rs.last() ? rs.getRow() : 0;
+		recordInfo.setNewInfo(queryEditor.getEditorTabName(), totalRs);
+		rs.beforeFirst();
+
+		if (isAsync) {
+			handleItemDataAsync(rs);
+		} else {
+			handleItemData(rs);
+		}
+
+		queryInfo = new QueryInfo(totalRs, pageLimit);
+		queryInfo.setCurrentPage(1);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void handleItemDataAsync(final CUBRIDResultSetProxy rs) {
+		Display.getDefault().asyncExec(new Runnable() {
+
+			@Override
+			public void run() {
+				int index = 0;
+				// just test
+				int displayLimit = 100;
+				try {
+					int recordsCount = 0;
+					while (rs.next()) {
+						cntRecord++;
+						recordsCount++;
+						addTableItemData(rs, -1);	// storing fetched records to allDataList
+
+						if (recordsCount >= displayLimit) {
+							final List<Map<String, CellValue>> list =
+									(List<Map<String, CellValue>>)((ArrayList<Map<String, CellValue>>) allDataList)
+									.clone();
+							allDataList = null;
+							allDataList = new ArrayList<Map<String, CellValue>>();
+
+							final String filePath = asyncFileLocation + Long.toString(System.currentTimeMillis());
+							final int fileIndex = index++;
+							writeRecordsToFile(list, queryEditor.getEditorTabName(), fileIndex, filePath);
+
+							recordsCount = 0;
+						}
+					}
+					if (recordsCount < displayLimit) {
+						final List<Map<String, CellValue>> list =
+								(List<Map<String, CellValue>>)((ArrayList<Map<String, CellValue>>) allDataList)
+								.clone();
+						final String filePath = asyncFileLocation + Long.toString(System.currentTimeMillis());
+						final int fileIndex = index++;
+						writeRecordsToFile(list, queryEditor.getEditorTabName(), fileIndex, filePath);
+
+						cntRecord = 0;
+						status.setFirstRecords(true);
+						status.setDone(true);
+					}
+				} catch (SQLException e) {
+					LOGGER.error(e.getMessage());
+				}
+			}
+		});
+	}
+
+	private void handleItemData(CUBRIDResultSetProxy rs) throws SQLException {
+		int index = recordLimit;
 		while (rs.next()) {	// need to change this logic as async.
 			cntRecord++;
 			//add item data to the end of list
 			addTableItemData(rs, -1);
-			if (isAsync) {
-				if (recordLimit > 0 && cntRecord >= recordLimit && multiQuerySql == null) {
-					final List<Map<String, CellValue>> list =
-							(List<Map<String, CellValue>>)((ArrayList<Map<String, CellValue>>) allDataList)
-							.clone();
-					allDataList = null;
-					allDataList = new ArrayList<Map<String, CellValue>>();
-
-					final String filePath = asyncFileLocation + Long.toString(System.currentTimeMillis());
-					final int fileIndex = index++;
-					writeRecordsToFile(list, queryEditor.getEditorTabName(), fileIndex, filePath);
-
-					cntRecord = 0;
-				}
-			} else {
-				if (recordLimit > 0 && cntRecord >= index && multiQuerySql == null) {
-					final String msg = Messages.bind(Messages.tooManyRecord, index);
-					showQueryTip(msg);
-					if (isEnd) {
-						break;
-					} else {
-						index += recordLimit;
-					}
+			if (recordLimit > 0 && cntRecord >= index && multiQuerySql == null) {
+				final String msg = Messages.bind(Messages.tooManyRecord, index);
+				showQueryTip(msg);
+				if (isEnd) {
+					break;
+				} else {
+					index += recordLimit;
 				}
 			}
 		}
-		if (multiQuerySql == null) {
-			queryInfo = new QueryInfo(cntRecord, pageLimit);
-			queryInfo.setCurrentPage(1);
-		}
+		status.setFirstRecords(true);
+		status.setDone(true);
 	}
 
 	private void writeRecordsToFile(final Object obj, final String id, final int index, final String path) {
@@ -655,11 +700,15 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 					synchronized (this) {
 						setFileName(id, index, path);
+						if (index == 0) {
+							status.setFirstRecords(true);
+						}
 					}
 				} catch (IOException e) {
 					LOGGER.error(e.getMessage());
 				} finally {
 					try {
+						status.setDone(true);
 						if (out != null) {
 							out.close();
 						}
@@ -1117,7 +1166,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 				}
 
 				int page = queryInfo.getCurrentPage();
-				makeResult(prs);
+				makeResultAsync(prs);
 				queryInfo.setCurrentPage(page);
 				makeItem();
 				updateActions();
@@ -1924,7 +1973,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			String elapsedTimeStr = new String(nf.format(elapsedTime));
 
 			if (start == 1) {
-				makeResult(rs);
+				makeResultAsync(rs);
 			} else {
 				fillTableItemData(rs, false);
 			}
@@ -1941,7 +1990,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			}
 
 			queryMsg += "[ " + elapsedTimeStr + " " + Messages.second + " , " + Messages.totalRows + " : "
-				+ cntRecord + " ]" + StringUtil.NEWLINE;
+				+ queryInfo.getTotalRs() + " ]" + StringUtil.NEWLINE;
 
 			if (useTuneMode && queryEditor.isCollectExecStats() && queryPlan != null) {
 				this.queryPlanLog = queryPlan;
@@ -1958,11 +2007,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 					+ " error message: " + event.getMessage(), event);
 			throw event;
 		} finally {
-			queryInfo = new QueryInfo(allDataList == null ? 0 : allDataList.size(), pageLimit);
-			queryInfo.setCurrentPage(1);
-			QueryUtil.freeQuery(stmt, rs);
-			stmt = null;
-			rs = null;
 			if (!isHasError && cntRecord == recordLimit && recordLimit > 0) {
 				isEnd = false;
 				final String msg = Messages.bind(Messages.tooManyRecord, end);
@@ -2094,9 +2138,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 */
 	public void makeItem() {
 		makeItemInit();
-
-		int begin = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize();
-		handleRowData(begin, 0);
+		handleRowData(0);	// first record's file was saved at index 0.
 	}
 
 	private  void makeItemInit() {
@@ -2155,14 +2197,14 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		}
 	}
 
-	private void handleRowData(int begin, int itemStartNo) {
-		int last = begin + queryInfo.getPageSize();
+	private void handleRowData(int recordIndex) {
 		List<Point> matchedPointList = new ArrayList<Point>();
-		int index = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize() + 1;
+		int index = recordIndex * 100 + 1;
 		String id = queryEditor.getEditorTabName();
-		List<Map<String, CellValue>> list = readFromFile(id, begin);
+		while (!status.hasFirstRecords()) {}
+		List<Map<String, CellValue>> list = readFromFile(id, recordIndex);
 
-		for (int i = itemStartNo; !list.isEmpty() && i < last && i < queryInfo.getTotalRs(); i++) {
+		for (int i = 0; !list.isEmpty() && i < list.size() && i < queryInfo.getTotalRs(); i++) {
 			Map<String, CellValue> dataMap = list.get(i);
 
 			// filter the data
@@ -2173,21 +2215,21 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 			TableItem item = new TableItem(tblResult, SWT.MULTI);
 			rsToItemMap.put(""+item.hashCode(), ""+i);
-			item.setText(0, String.valueOf(index + i - begin));
+			item.setText(0, String.valueOf(index + i));
 			item.setData(dataMap);
 			makeItemValue(item, dataMap);
 			item.setBackground(0, Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
-			handleColumnData(item, itemStartNo, dataMap, i, matchedPointList);
-			itemStartNo++;
+			handleColumnData(item, i, dataMap, i, matchedPointList);
 		}
-
+ 
 		if (filterResultContrItem.isUseFilter()) {
 			selectableSupport.setSelection(matchedPointList);
 		}
 
-		tblResult.setTopIndex(begin);
+		tblResult.setTopIndex(recordIndex);
 	}
 
+	@SuppressWarnings("unchecked")
 	private List<Map<String, CellValue>> readFromFile(String id, int begin) {
 		String fileName = recordInfo.getFileNameByKeyAndIndex(id, begin);
 		ObjectInputStream in = null;
@@ -2255,51 +2297,15 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 */
 	public void makeNextItem() {
 		makeItemInit();
-		int begin = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize();
-		handleRowData(begin, begin);
+		int index = queryInfo.getPages() == queryInfo.getCurrentPage() ?
+				queryInfo.getPages() - 1 : queryInfo.getCurrentPage() - 1;
+		handleRowData(index);
 	}
 
 	public void makePrevItem() {
 		makeItemInit();
-		handleRowDataAsReverse();
-	}
-
-	/**
-	 * This is temporary method for prev action
-	 */
-	private void handleRowDataAsReverse() {
-		int itemStartNo = 0;
-		int begin = queryInfo.getCurrentPage() > 1 ? (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize() : 1;
-		int last = begin + queryInfo.getPageSize();
-		List<Point> matchedPointList = new ArrayList<Point>();
-		int index = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize() + 1;
-		String id = queryEditor.getEditorTabName();
-		List<Map<String, CellValue>> list = readFromFile(id, begin);
-
-		for (int i = begin; !list.isEmpty() && i < last && i < queryInfo.getTotalRs(); i++) {
-			Map<String, CellValue> dataMap = list.get(i);
-
-			// filter the data
-			boolean isAccepted = filterResultContrItem.select(dataMap, filterSetting);
-			if (!isAccepted) {
-				continue;
-			}
-
-			TableItem item = new TableItem(tblResult, SWT.MULTI);
-			rsToItemMap.put(""+item.hashCode(), ""+i);
-			item.setText(0, String.valueOf(index + i - begin));
-			item.setData(dataMap);
-			makeItemValue(item, dataMap);
-			item.setBackground(0, Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
-			handleColumnData(item, itemStartNo, dataMap, i, matchedPointList);
-			itemStartNo++;
-		}
-
-		if (filterResultContrItem.isUseFilter()) {
-			selectableSupport.setSelection(matchedPointList);
-		}
-
-		tblResult.setTopIndex(begin);
+		int index = queryInfo.getCurrentPage() < 2 ? 0 : queryInfo.getCurrentPage() - 2;
+		handleRowData(index);
 	}
 
 	/**
@@ -3563,7 +3569,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	class StatusChecker {
 		private boolean hasFirstRecords = false;
-		private boolean isDone;
+		private boolean isDone = false;
 
 		public synchronized void setFirstRecords(boolean hasFirstRecords) {
 			this.hasFirstRecords = hasFirstRecords;

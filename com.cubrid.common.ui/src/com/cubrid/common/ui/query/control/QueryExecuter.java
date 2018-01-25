@@ -616,7 +616,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		queryInfo.setCurrentPage(1);
 	}
 
-	@SuppressWarnings("unchecked")
 	private void handleItemDataAsync(final CUBRIDResultSetProxy rs) {
 		Display.getDefault().asyncExec(new Runnable() {
 
@@ -633,36 +632,35 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 						addTableItemData(rs, -1);	// storing fetched records to allDataList
 
 						if (recordsCount >= displayLimit) {
-							final List<Map<String, CellValue>> list =
-									(List<Map<String, CellValue>>)((ArrayList<Map<String, CellValue>>) allDataList)
-									.clone();
-							allDataList = null;
-							allDataList = new ArrayList<Map<String, CellValue>>();
-
-							final String filePath = asyncFileLocation + Long.toString(System.currentTimeMillis());
-							final int fileIndex = index++;
-							writeRecordsToFile(list, queryEditor.getEditorTabName(), fileIndex, filePath);
-
+							processRecords(index++, true);
 							recordsCount = 0;
 						}
 					}
 					if (recordsCount < displayLimit) {
-						final List<Map<String, CellValue>> list =
-								(List<Map<String, CellValue>>)((ArrayList<Map<String, CellValue>>) allDataList)
-								.clone();
-						final String filePath = asyncFileLocation + Long.toString(System.currentTimeMillis());
-						final int fileIndex = index++;
-						writeRecordsToFile(list, queryEditor.getEditorTabName(), fileIndex, filePath);
-
-						cntRecord = 0;
-						status.setFirstRecords(true);
-						status.setDone(true);
+						processRecords(index++, false);
 					}
 				} catch (SQLException e) {
 					LOGGER.error(e.getMessage());
 				}
 			}
 		});
+	}
+
+	@SuppressWarnings("unchecked")
+	private void processRecords(int index, boolean isAsync) {
+		List<Map<String, CellValue>> list =
+				(List<Map<String, CellValue>>)((ArrayList<Map<String, CellValue>>) allDataList)
+				.clone();
+		String filePath = asyncFileLocation + Long.toString(System.currentTimeMillis());
+		writeRecordsToFile(list, queryEditor.getEditorTabName(), index, filePath);
+
+		if (isAsync) {
+			allDataList = null;
+			allDataList = new ArrayList<Map<String, CellValue>>();
+		} else {
+			status.setFirstRecords(true);
+			status.setDone(true);
+		}
 	}
 
 	private void handleItemData(CUBRIDResultSetProxy rs) throws SQLException {

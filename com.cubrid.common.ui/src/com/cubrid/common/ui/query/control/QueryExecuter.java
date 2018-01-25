@@ -626,7 +626,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 				int displayLimit = 100;
 				try {
 					int recordsCount = 0;
-					while (rs.next()) {
+					while (rs.next() && !status.isDone()) {
 						cntRecord++;
 						recordsCount++;
 						addTableItemData(rs, -1);	// storing fetched records to allDataList
@@ -636,7 +636,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 							recordsCount = 0;
 						}
 					}
-					if (recordsCount < displayLimit) {
+					if (recordsCount < displayLimit && !status.isDone()) {
 						processRecords(index++, false);
 					}
 				} catch (SQLException e) {
@@ -2715,6 +2715,9 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			colComparatorMap.clear();
 			colComparatorMap = null;
 		}
+		status.setDone(true);	// stop the record writing thread
+		recordInfo.remove(queryEditor.getEditorTabName());
+		status.setDone(false);	// init the StatusChecker object.
 	}
 	
 	public void initBeforeRunQuery() {

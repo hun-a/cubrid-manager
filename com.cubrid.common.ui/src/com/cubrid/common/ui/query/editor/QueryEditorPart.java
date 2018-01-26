@@ -3190,7 +3190,7 @@ public class QueryEditorPart extends
 	 * @return editorTabNameOriginal String
 	 */
 	public String getEditorTabName() {
-		return editorTabNameOriginal;
+		return getPartName();
 	}
 
 	/**

@@ -759,10 +759,14 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * Update paged action state
 	 */
 	public void updateActions() {
-		if (queryInfo.getCurrentPage() >= queryInfo.getPages()) {
+		if (queryInfo.getCurrentPage() == 1) {
 			prevPageAction.setEnabled(false);
-			lastPageAction.setEnabled(false);
+			nextPageAction.setEnabled(true);
+			lastPageAction.setEnabled(true);
+		} else if (queryInfo.getCurrentPage() >= queryInfo.getPages()) {
+			prevPageAction.setEnabled(true);
 			nextPageAction.setEnabled(false);
+			lastPageAction.setEnabled(false);
 		} else {
 			lastPageAction.setEnabled(true);
 			nextPageAction.setEnabled(true);

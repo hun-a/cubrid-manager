@@ -633,15 +633,18 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 						recordsCount++;
 						addTableItemData(rs, -1);	// storing fetched records to allDataList
 
-						if (recordsCount >= displayLimit) {
+						if (recordsCount == displayLimit) {
 							processRecords(index++, true);
 							recordsCount = 0;
 						}
 					}
-					if (recordsCount < displayLimit && !status.isDone()) {
+					if (recordsCount > 0 && !status.isDone()) {
+						Thread.sleep(1);
 						processRecords(index++, false);
 					}
 				} catch (SQLException e) {
+					LOGGER.error(e.getMessage());
+				} catch (InterruptedException e) {
 					LOGGER.error(e.getMessage());
 				}
 			}

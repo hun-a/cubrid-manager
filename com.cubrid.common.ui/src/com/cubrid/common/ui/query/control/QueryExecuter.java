@@ -2310,6 +2310,12 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		handleRowData(index);
 	}
 
+	public void makeLastItem() {
+		makeItemInit();
+		int index = queryInfo.getPages();
+		handleRowData(index);
+	}
+
 	/**
 	 * Compare data and mart item foreground
 	 */

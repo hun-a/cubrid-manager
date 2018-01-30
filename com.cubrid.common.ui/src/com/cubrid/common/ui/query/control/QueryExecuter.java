@@ -120,6 +120,7 @@ import com.cubrid.common.ui.cubrid.table.dialog.PstmtParameter;
 import com.cubrid.common.ui.cubrid.table.export.ResultSetDataCache;
 import com.cubrid.common.ui.query.Messages;
 import com.cubrid.common.ui.query.action.CopyAction;
+import com.cubrid.common.ui.query.action.FirstAction;
 import com.cubrid.common.ui.query.action.InputMethodAction;
 import com.cubrid.common.ui.query.action.LastAction;
 import com.cubrid.common.ui.query.action.NextAction;
@@ -198,6 +199,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private Action prevPageAction = null;
 	private Action nextPageAction = null;
 	private Action lastPageAction = null;
+	private Action firstPageAction = null;
 	private FilterResultContrItem filterResultContrItem;
 	private List<Map<String, CellValue>> allDataList = null;
 	private ResultSetDataCache resultSetDataCache;
@@ -730,9 +732,11 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	public void makeActions(ToolBarManager toolBarManager) {
 		toolBarManager.add(filterResultContrItem);
 		toolBarManager.add(new Separator());
+		firstPageAction = new FirstAction(this);
 		prevPageAction = new PrevAction(this);
 		lastPageAction = new LastAction(this);
 		nextPageAction = new NextAction(this);
+		toolBarManager.add(firstPageAction);
 		toolBarManager.add(prevPageAction);
 		toolBarManager.add(nextPageAction);
 		toolBarManager.add(lastPageAction);
@@ -744,6 +748,9 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * Set the action disabled
 	 */
 	private void disableActions() {
+		if (firstPageAction != null) {
+			firstPageAction.setEnabled(false);
+		}
 		if (prevPageAction != null) {
 			prevPageAction.setEnabled(false);
 		}
@@ -760,14 +767,17 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 */
 	public void updateActions() {
 		if (queryInfo.getCurrentPage() == 1) {
+			firstPageAction.setEnabled(false);
 			prevPageAction.setEnabled(false);
 			nextPageAction.setEnabled(true);
 			lastPageAction.setEnabled(true);
 		} else if (queryInfo.getCurrentPage() >= queryInfo.getPages()) {
+			firstPageAction.setEnabled(true);
 			prevPageAction.setEnabled(true);
 			nextPageAction.setEnabled(false);
 			lastPageAction.setEnabled(false);
 		} else {
+			firstPageAction.setEnabled(true);
 			lastPageAction.setEnabled(true);
 			nextPageAction.setEnabled(true);
 			prevPageAction.setEnabled(true);
@@ -2314,6 +2324,11 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		makeItemInit();
 		int index = queryInfo.getPages();
 		handleRowData(index);
+	}
+
+	public void makeFirstItem() {
+		makeItemInit();
+		handleRowData(0);	// first page index is 0.
 	}
 
 	/**

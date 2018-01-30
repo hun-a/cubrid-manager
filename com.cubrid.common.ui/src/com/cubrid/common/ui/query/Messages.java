@@ -225,6 +225,7 @@ public class Messages extends
 	public static String explain_history_delete_error;
 
 	public static String qedit_lastpage;
+	public static String qedit_furstpage;
 	public static String qedit_nextpage;
 
 	public static String commitUpdate;

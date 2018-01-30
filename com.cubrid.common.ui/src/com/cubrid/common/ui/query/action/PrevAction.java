@@ -33,7 +33,6 @@ public class PrevAction extends Action {
 
 		QueryInfo queryInfo = executer.getQueryInfo();
 		queryInfo.setCurrentPage(queryInfo.getCurrentPage() > 1 ? queryInfo.getCurrentPage() - 1 : 1);
-		// TODO Add: read the previous records from file
 		executer.makePrevItem();	// makePrevItem();
 		executer.updateActions();
 	}

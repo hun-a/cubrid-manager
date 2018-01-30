@@ -771,7 +771,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			prevPageAction.setEnabled(false);
 			nextPageAction.setEnabled(true);
 			lastPageAction.setEnabled(true);
-		} else if (queryInfo.getCurrentPage() >= queryInfo.getPages()) {
+		} else if (queryInfo.getCurrentPage() >= queryInfo.getPages() - 1) {
 			firstPageAction.setEnabled(true);
 			prevPageAction.setEnabled(true);
 			nextPageAction.setEnabled(false);
@@ -2322,7 +2322,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	public void makeLastItem() {
 		makeItemInit();
-		int index = queryInfo.getPages();
+		int index = queryInfo.getPages() - 1;
 		handleRowData(index);
 	}
 

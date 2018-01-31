@@ -774,7 +774,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			prevPageAction.setEnabled(false);
 			nextPageAction.setEnabled(true);
 			lastPageAction.setEnabled(true);
-		} else if (queryInfo.getCurrentPage() >= queryInfo.getPages() - 1) {
+		} else if (queryInfo.getCurrentPage() >= queryInfo.getPages()) {
 			firstPageAction.setEnabled(true);
 			prevPageAction.setEnabled(true);
 			nextPageAction.setEnabled(false);
@@ -2246,6 +2246,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	@SuppressWarnings("unchecked")
 	private List<Map<String, CellValue>> readFromFile(String id, int begin) {
+		// need to check the file is exists using ProgressBar
 		String fileName = recordInfo.getFileNameByKeyAndIndex(id, begin);
 		ObjectInputStream in = null;
 
@@ -2319,7 +2320,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	public void makePrevItem() {
 		makeItemInit();
-		int index = queryInfo.getCurrentPage() < 2 ? 0 : queryInfo.getCurrentPage() - 2;
+		int index = queryInfo.getCurrentPage() < 2 ? 0 : queryInfo.getCurrentPage() - 1;
 		handleRowData(index);
 	}
 

@@ -693,14 +693,12 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 			@Override
 			public void run() {
-				// TODO Auto-generated method stub
 				ObjectOutputStream out = null;
 
 				try {
 					out = new ObjectOutputStream(new FileOutputStream(path));
 					out.writeObject(obj);
 					out.flush();
-
 					synchronized (this) {
 						setFileName(id, index, path);
 						if (index == 0) {
@@ -2205,7 +2203,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		List<Point> matchedPointList = new ArrayList<Point>();
 		int index = recordIndex * 100 + 1;
 		String id = queryEditor.getEditorTabName();
-		while (!status.hasFirstRecords()) {}
+		while (!isFileExists(id, recordIndex)) {}	// temporary logic
 		List<Map<String, CellValue>> list = readFromFile(id, recordIndex);
 
 		for (int i = 0; !list.isEmpty() && i < list.size() && i < queryInfo.getTotalRs(); i++) {
@@ -2233,9 +2231,12 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		tblResult.setTopIndex(recordIndex);
 	}
 
+	private boolean isFileExists(String id, int begin) {
+		return recordInfo.getFileNameByKeyAndIndex(id, begin) != null;
+	}
+
 	@SuppressWarnings("unchecked")
 	private List<Map<String, CellValue>> readFromFile(String id, int begin) {
-		// need to check the file is exists using ProgressBar
 		String fileName = recordInfo.getFileNameByKeyAndIndex(id, begin);
 		ObjectInputStream in = null;
 

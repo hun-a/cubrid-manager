@@ -296,21 +296,19 @@ public final class SqlParser { // FIXME move to core module
 		if (insertPos < sqlStr.length() - 1) {
 			afterPartSql = sqlStr.substring(insertPos + 1);
 		}
-		// the constant ROWNUM_CONDITION_MARK is mark to be replaced in
-		// QueryExcuter.makeTable(int start)
-		String parsedSql = prePartSql + ROWNUM_CONDITION_MARK;
-		if (afterPartSql.length() == 0) {
-			parsedSql += ";";
+
+		if (prePartSql.length() == 0) {
+			prePartSql += ";";
 		} else {
 			String[] afterPartSqlArr = afterPartSql.split("\\n");
 			String lastLine = afterPartSqlArr[afterPartSqlArr.length - 1];
 			if (lastLine.indexOf("//") >= 0 || lastLine.indexOf("--") >= 0) {
-				parsedSql += "\r\n" + afterPartSql + "\r\n" + ";";
+				prePartSql += "\r\n" + afterPartSql + "\r\n" + ";";
 			} else {
-				parsedSql += "\r\n" + afterPartSql + ";";
+				prePartSql += "\r\n" + afterPartSql + ";";
 			}
 		}
-		return parsedSql;
+		return prePartSql;
 	}
 
 	/**

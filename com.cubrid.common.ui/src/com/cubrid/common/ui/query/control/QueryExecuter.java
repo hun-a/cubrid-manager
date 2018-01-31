@@ -1942,17 +1942,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	public TuneModeModel makeTable(int start, boolean useTuneMode) throws SQLException {
 		int end = start + recordLimit - 1;
 		String sql = multiQuerySql;
-		if (multiQuerySql.indexOf(SqlParser.ROWNUM_CONDITION_MARK) != -1) {
-			if (dontTipNext) {
-				if (recordLimit > 0) {
-					sql = this.multiQuerySql.replace(SqlParser.ROWNUM_CONDITION_MARK,
-						"\r\nWHERE ROWNUM  >= " + String.valueOf(start));
-				}
-			} else {
-				sql = this.multiQuerySql.replace(SqlParser.ROWNUM_CONDITION_MARK,
-					"\r\nWHERE ROWNUM BETWEEN " + String.valueOf(start) + " AND " + String.valueOf(end));
-			}
-		}
 
 		TuneModeModel tuneModeModel = null;
 		long beginTimestamp = 0;

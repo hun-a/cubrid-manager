@@ -180,7 +180,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private static final Color GREEN_COLOR = ResourceManager.getColor(0, 154, 33);
 	private static final Color BLUE_COLOR = ResourceManager.getColor(0, 0, 255);
 
-	private final int WRITE_THREAD_POOL_COUNT = 10;
+	private final int THREAD_POOL_COUNT = 10;
 	private final int recordLimit;
 	public String query = "";
 	public final String orignQuery;
@@ -302,7 +302,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			f.mkdir();
 		}
 
-		recordsExecutor = Executors.newFixedThreadPool(WRITE_THREAD_POOL_COUNT);
+		recordsExecutor = Executors.newFixedThreadPool(THREAD_POOL_COUNT);
 	}
 
 	public QueryExecuter(QueryEditorPart qe, int idx, String query, CubridDatabase cubridDatabase,
@@ -665,11 +665,9 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 				.clone();
 		String filePath = asyncFileLocation + Long.toString(System.currentTimeMillis());
 		writeRecordsToFile(list, queryEditor.getEditorTabName(), index, filePath);
-
-		if (isAsync) {
-			allDataList = null;
-			allDataList = new ArrayList<Map<String, CellValue>>();
-		} else {
+		allDataList = null;
+		allDataList = new ArrayList<Map<String, CellValue>>();
+		if (!isAsync) {
 			status.setFirstRecords(true);
 			status.setDone(true);
 			QueryUtil.freeQuery(rs);
@@ -717,7 +715,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 					LOGGER.error(e.getMessage());
 				} finally {
 					try {
-						status.setDone(true);
 						if (out != null) {
 							out.close();
 						}

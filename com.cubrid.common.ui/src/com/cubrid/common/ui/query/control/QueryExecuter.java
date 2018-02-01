@@ -52,6 +52,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -177,6 +179,8 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private static final Color RED_COLOR = ResourceManager.getColor(255, 0, 0);
 	private static final Color GREEN_COLOR = ResourceManager.getColor(0, 154, 33);
 	private static final Color BLUE_COLOR = ResourceManager.getColor(0, 0, 255);
+
+	private final int WRITE_THREAD_POOL_COUNT = 10;
 	private final int recordLimit;
 	public String query = "";
 	public final String orignQuery;
@@ -243,6 +247,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private RecordInfo recordInfo;
 	private String asyncFileLocation;
 	private final StatusChecker status;
+	private ExecutorService recordsExecutor;
 
 	public QueryExecuter(QueryEditorPart qe, int idx, String query, CubridDatabase cubridDatabase, DBConnection con,
 			List<PstmtParameter> parameterList, String orignQuery) {
@@ -296,6 +301,8 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		if (!f.isDirectory()) {
 			f.mkdir();
 		}
+
+		recordsExecutor = Executors.newFixedThreadPool(WRITE_THREAD_POOL_COUNT);
 	}
 
 	public QueryExecuter(QueryEditorPart qe, int idx, String query, CubridDatabase cubridDatabase,
@@ -619,7 +626,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	}
 
 	private void handleItemDataAsync(final CUBRIDResultSetProxy rs) {
-		Display.getDefault().asyncExec(new Runnable() {
+		new Thread((new Runnable() {
 
 			@Override
 			public void run() {
@@ -628,7 +635,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 				int displayLimit = 100;
 				try {
 					int recordsCount = 0;
-					while (rs.next() && !status.isDone()) {
+					while (rs.next()) {
 						cntRecord++;
 						recordsCount++;
 						addTableItemData(rs, -1);	// storing fetched records to allDataList
@@ -638,7 +645,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 							recordsCount = 0;
 						}
 					}
-					if (recordsCount > 0 && !status.isDone()) {
+					if (recordsCount > 0) {
 						Thread.sleep(1);
 						processRecords(index++, false);
 					}
@@ -648,7 +655,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 					LOGGER.error(e.getMessage());
 				}
 			}
-		});
+		})).start();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -665,6 +672,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		} else {
 			status.setFirstRecords(true);
 			status.setDone(true);
+			QueryUtil.freeQuery(rs);
 		}
 	}
 
@@ -689,7 +697,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	}
 
 	private void writeRecordsToFile(final Object obj, final String id, final int index, final String path) {
-		Display.getDefault().asyncExec(new Runnable() {
+		recordsExecutor.submit(new Runnable() {
 
 			@Override
 			public void run() {
@@ -2734,6 +2742,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			colComparatorMap.clear();
 			colComparatorMap = null;
 		}
+		recordsExecutor.shutdownNow();
 		status.setDone(true);	// stop the record writing thread
 		recordInfo.remove(queryEditor.getEditorTabName());
 		status.setDone(false);	// init the StatusChecker object.

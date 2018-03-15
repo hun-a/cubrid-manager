@@ -67,7 +67,6 @@ public class QueryPropertyComposite extends
 		Composite {
 
 	private Button searchUnitBtn;
-	private Spinner pageUnitCountSpinner;
 	private Spinner unitCountSpinner;
 	private Spinner loadSizeSpinner;
 //	private Button oidBtn;
@@ -80,7 +79,6 @@ public class QueryPropertyComposite extends
 	private Button keywordLowerBtn;
 	private Button withoutPromptSaveBtn;
 	private Button autoNoUppercaseKeywordBtn;
-	private Button multiPageConfirmBtn;
 	private Button useScientificNotationBtn;
 
 	public QueryPropertyComposite(Composite parent, CubridServer server) {
@@ -94,15 +92,12 @@ public class QueryPropertyComposite extends
 	 */
 	public void loadPreference() {
 		ServerInfo serverInfo = server == null ? null : server.getServerInfo();
-		boolean unitInstances = QueryOptions.getEnableSearchUnit(serverInfo);
 		int recordCount = QueryOptions.getSearchUnitCount(serverInfo);
-		int pageCount = QueryOptions.getPageLimit(serverInfo);
 		int loadSize = QueryOptions.getLobLoadSize(serverInfo);
 
 		boolean isKeywordLowerCase = QueryOptions.getKeywordLowercase(serverInfo);
 		boolean isNoAutoUppercaseKeyword = QueryOptions.getNoAutoUppercaseKeyword(serverInfo);
 		boolean isWithoutPromptSave = QueryOptions.getWithoutPromptSave(serverInfo);
-		boolean isShowMultiPageConfirm = QueryOptions.getMultiPageConfirm();
 		boolean isUseScientificNotation = QueryOptions.getUseScientificNotation(serverInfo);
 
 		fontColorRed = QueryOptions.getFontColorRed(serverInfo);
@@ -110,11 +105,8 @@ public class QueryPropertyComposite extends
 		fontColorGreen = QueryOptions.getFontColorGreen(serverInfo);
 		fontString = QueryOptions.getFontString(serverInfo);
 
-		searchUnitBtn.setSelection(unitInstances);
-		unitCountSpinner.setEnabled(unitInstances);
 		unitCountSpinner.setSelection(recordCount);
 		loadSizeSpinner.setSelection(loadSize);
-		pageUnitCountSpinner.setSelection(pageCount);
 
 		keywordLowerBtn.setSelection(isKeywordLowerCase);
 		keywordLowerBtn.addSelectionListener(new SelectionListener() {
@@ -128,7 +120,6 @@ public class QueryPropertyComposite extends
 
 		autoNoUppercaseKeywordBtn.setSelection(isNoAutoUppercaseKeyword);
 		withoutPromptSaveBtn.setSelection(isWithoutPromptSave);
-		multiPageConfirmBtn.setSelection(isShowMultiPageConfirm);
 		changeExampleFont();
 
 		autoNoUppercaseKeywordBtn.setEnabled(!isKeywordLowerCase);
@@ -157,20 +148,15 @@ public class QueryPropertyComposite extends
 	 */
 	public void save() {
 		ServerInfo serverInfo = server == null ? null : server.getServerInfo();
-		boolean isEnableSearchUnit = searchUnitBtn.getSelection();
 		int unitCount = unitCountSpinner.getSelection();
-		int pageUnitCount = pageUnitCountSpinner.getSelection();
 		int loadSize = loadSizeSpinner.getSelection();
 
 		boolean isKeywordLowercase = keywordLowerBtn.getSelection();
 		boolean isNoAutoUppercaseKeyword = autoNoUppercaseKeywordBtn.getSelection();
 		boolean isWithoutPromptSave = withoutPromptSaveBtn.getSelection();
-		boolean isShowMultiPageConfirm = multiPageConfirmBtn.getSelection();
 		boolean isUseScientificNotation = useScientificNotationBtn.getSelection();
 
-		QueryOptions.setEnableSearchUnit(serverInfo, isEnableSearchUnit);
 		QueryOptions.setSearchUnitCount(serverInfo, unitCount);
-		QueryOptions.setPageLimit(serverInfo, pageUnitCount);
 		QueryOptions.setKeywordLowercase(serverInfo, isKeywordLowercase);
 		QueryOptions.setNoAutoUppercaseKeyword(serverInfo, isNoAutoUppercaseKeyword);
 		QueryOptions.setWithoutPromptSave(serverInfo, isWithoutPromptSave);
@@ -181,7 +167,6 @@ public class QueryPropertyComposite extends
 		QueryOptions.setShowStyle(serverInfo, true);
 		QueryOptions.setUseScientificNotation(serverInfo, isUseScientificNotation);
 		QueryOptions.setLobLoadSize(serverInfo, loadSize);
-		QueryOptions.setMultiPageConfirm(isShowMultiPageConfirm);
 		QueryOptions.savePref();
 
 		IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
@@ -236,17 +221,6 @@ public class QueryPropertyComposite extends
 		unitCountSpinner.setLayoutData(gdUnitCountSpinner);
 		unitCountSpinner.setIncrement(100);
 
-		final Label label = new Label(groupFirst, SWT.NONE);
-		label.setText(Messages.pageUnitInstances);
-
-		pageUnitCountSpinner = new Spinner(groupFirst, SWT.BORDER);
-		pageUnitCountSpinner.setMaximum(2147483647);
-		final GridData gdPageUnitSpinner = new GridData(SWT.RIGHT, SWT.CENTER,
-				false, false);
-		gdPageUnitSpinner.widthHint = 129;
-		pageUnitCountSpinner.setLayoutData(gdPageUnitSpinner);
-		pageUnitCountSpinner.setIncrement(10);
-
 		final Label lobSizeLabel = new Label(groupFirst, SWT.NONE);
 		lobSizeLabel.setText(Messages.lblLobLoadSize);
 
@@ -254,16 +228,8 @@ public class QueryPropertyComposite extends
 		loadSizeSpinner.setMaximum(1024 * 1024);
 		final GridData gdlobSizeSpinner = new GridData(SWT.RIGHT, SWT.CENTER, false, false);
 		gdlobSizeSpinner.widthHint = 129;
-		loadSizeSpinner.setLayoutData(gdPageUnitSpinner);
+		loadSizeSpinner.setLayoutData(gdlobSizeSpinner);
 		loadSizeSpinner.setIncrement(8);
-
-		multiPageConfirmBtn = new Button(groupFirst, SWT.CHECK);
-		multiPageConfirmBtn.setText(Messages.showMultiPageConfirm);
-		{
-			final GridData gd = new GridData(GridData.FILL_HORIZONTAL);
-			gd.horizontalSpan = 2;
-			multiPageConfirmBtn.setLayoutData(gd);
-		}
 
 		keywordLowerBtn = new Button(groupFirst, SWT.CHECK);
 		keywordLowerBtn.setText(Messages.btnKeywordLowercase);

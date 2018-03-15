@@ -73,8 +73,6 @@ public class LastAction extends
 			executer.tblResult.forceFocus();
 		}
 
-		QueryInfo queryInfo = executer.getQueryInfo();
-		queryInfo.setCurrentPage(queryInfo.getPages());
 		executer.makeItem();
 		executer.updateActions();
 	}

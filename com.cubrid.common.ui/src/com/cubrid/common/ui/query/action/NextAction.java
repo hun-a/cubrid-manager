@@ -74,7 +74,6 @@ public class NextAction extends
 		}
 
 		QueryInfo queryInfo = executer.getQueryInfo();
-		queryInfo.setCurrentPage(queryInfo.getCurrentPage() + 1);
 		executer.makeItem();
 		executer.updateActions();
 	}

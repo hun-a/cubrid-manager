@@ -175,7 +175,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	public int idx;
 	public int cntRecord = 0;
 	public Table tblResult = null;
-	public int pageLimit; // each page size
 	public ToolItem insertRecordItem = null;
 	public ToolItem insertSaveItem = null;
 	public ToolItem delRecordItem = null;
@@ -195,7 +194,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private ResultSetDataCache resultSetDataCache;
 	private List<ColumnInfo> allColumnList = null;
 	private boolean isEnd = false;
-	private boolean dontTipNext = false;
 	private String queryMsg;
 	private String multiQuerySql = null;
 	private Map<String, ColumnComparator> colComparatorMap = null;
@@ -247,19 +245,13 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		this.orignQuery = orignQuery;
 		this.connection = con;
 		ServerInfo serverInfo = cubridDatabase.getServer() == null ? null : cubridDatabase.getServer().getServerInfo();
-		pageLimit = QueryOptions.getPageLimit(serverInfo);
-		filterResultContrItem = new FilterResultContrItem(this, pageLimit);
+		filterResultContrItem = new FilterResultContrItem(this, 0);
 		recordLimit = QueryOptions.getSearchUnitCount(serverInfo);
 		allDataList = new ArrayList<Map<String, CellValue>>();
 		allColumnList = new ArrayList<ColumnInfo>();
 		colComparatorMap = new HashMap<String, ColumnComparator>();
 		resultSetDataCache = new ResultSetDataCache();
-		boolean enableSearchUnit = QueryOptions.getEnableSearchUnit(serverInfo);
 		loadSize = QueryOptions.getLobLoadSize(serverInfo);
-		dontTipNext = !QueryOptions.getMultiPageConfirm();
-		if (!enableSearchUnit) {
-			dontTipNext = true;
-		}
 
 		boolean isUseScientificNotation = QueryOptions.getUseScientificNotation(serverInfo);
 		if (isUseScientificNotation) {
@@ -315,8 +307,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 				sb.append(StringUtil.NEWLINE);
 			}
 		}
-		queryInfo = new QueryInfo(allDataList.size(), pageLimit);
-		queryInfo.setCurrentPage(1);
+		queryInfo = new QueryInfo(allDataList.size());
 		textData = sb.toString().replace("\n", StringUtil.NEWLINE);
 	}
 
@@ -605,8 +596,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			addTableItemData(rs, -1);
 			resultSetDataCache.AddData(BuildCurrentRowData(rs));
 			if (recordLimit > 0 && cntRecord >= limit && multiQuerySql == null) {
-				final String msg = Messages.bind(Messages.tooManyRecord, limit);
-				showQueryTip(msg);
 				if (isEnd) {
 					break;
 				} else {
@@ -615,8 +604,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			}
 		}
 		if (multiQuerySql == null) {
-			queryInfo = new QueryInfo(cntRecord, pageLimit);
-			queryInfo.setCurrentPage(1);
+			queryInfo = new QueryInfo(cntRecord);
 		}
 	}
 
@@ -652,13 +640,9 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * Update paged action state
 	 */
 	public void updateActions() {
-		if (queryInfo.getCurrentPage() >= queryInfo.getPages()) {
-			lastPageAction.setEnabled(false);
-			nextPageAction.setEnabled(false);
-		} else {
-			lastPageAction.setEnabled(true);
-			nextPageAction.setEnabled(true);
-		}
+		// TODO This action need to delete.
+		lastPageAction.setEnabled(true);
+		nextPageAction.setEnabled(true);
 	}
 
 	/**
@@ -1054,9 +1038,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 					allDataList.clear();
 				}
 
-				int page = queryInfo.getCurrentPage();
 				makeResult(prs);
-				queryInfo.setCurrentPage(page);
 				makeItem();
 				updateActions();
 
@@ -1187,8 +1169,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 				}
 
 				//Bug fixed by Kevin.Qian. FYI. allDataList is a global query result to the current query.
-				int pageBeginIndex = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize();
-				Map<String, CellValue> map = allDataList.get(pageBeginIndex + location.y);
+				Map<String, CellValue> map = allDataList.get(location.y);
 				TableItem item = tblResult.getItem(location.y);
 				ColumnInfo colInfo = allColumnList.get(location.x - 1);
 				RowDetailDialog dialog = new RowDetailDialog(tblResult.getShell(), allColumnList, map, item,
@@ -1817,15 +1798,8 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		int end = start + recordLimit - 1;
 		String sql = multiQuerySql;
 		if (multiQuerySql.indexOf(SqlParser.ROWNUM_CONDITION_MARK) != -1) {
-			if (dontTipNext) {
-				if (recordLimit > 0) {
-					sql = this.multiQuerySql.replace(SqlParser.ROWNUM_CONDITION_MARK,
-						"\r\nWHERE ROWNUM  >= " + String.valueOf(start));
-				}
-			} else {
-				sql = this.multiQuerySql.replace(SqlParser.ROWNUM_CONDITION_MARK,
-					"\r\nWHERE ROWNUM BETWEEN " + String.valueOf(start) + " AND " + String.valueOf(end));
-			}
+			sql = this.multiQuerySql.replace(SqlParser.ROWNUM_CONDITION_MARK,
+				"\r\nWHERE ROWNUM BETWEEN " + String.valueOf(start) + " AND " + String.valueOf(end));
 		}
 
 		TuneModeModel tuneModeModel = null;
@@ -1896,15 +1870,12 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 					+ " error message: " + event.getMessage(), event);
 			throw event;
 		} finally {
-			queryInfo = new QueryInfo(allDataList == null ? 0 : allDataList.size(), pageLimit);
-			queryInfo.setCurrentPage(1);
+			queryInfo = new QueryInfo(allDataList == null ? 0 : allDataList.size());
 			QueryUtil.freeQuery(stmt, rs);
 			stmt = null;
 			rs = null;
 			if (!isHasError && cntRecord == recordLimit && recordLimit > 0) {
 				isEnd = false;
-				final String msg = Messages.bind(Messages.tooManyRecord, end);
-				showQueryTip(msg);
 				if (!isEnd) {
 					makeTable(end + 1, false);
 				}
@@ -1932,63 +1903,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		}
 		sqlDetailHistory.setExecuteInfo(info);
 		sqlDetailHistory.setElapseTime(elapseTime);
-	}
-
-	/**
-	 * show the query tip
-	 *
-	 * @param msg String
-	 */
-	private void showQueryTip(final String msg) {
-		Display.getDefault().syncExec(new Runnable() {
-			/**
-			 * @see org.eclipse.jface.action.Action#run()
-			 */
-			public void run() {
-				if (!dontTipNext) {
-
-					MessageDialog dialog = new MessageDialog(queryEditor.getEditorSite().getShell(), Messages.warning, null,
-						msg, MessageDialog.QUESTION, new String[] {Messages.btnYes, Messages.btnNo}, 1) {
-						Button btn = null;
-
-						/**
-						 * @see org.eclipse.jface.dialogs.MessageDialog#createCustomArea(org.eclipse.swt.widgets.Composite)
-						 * @param parent parent composite to contain the custom
-						 *        area
-						 * @return the custom area control, or <code>null</code>
-						 */
-						protected Control createCustomArea(Composite parent) {
-							btn = new Button(parent, SWT.CHECK);
-							btn.setText(Messages.showOneTimeTip);
-							return btn;
-						}
-
-						/**
-						 * @see org.eclipse.jface.dialogs.Dialog#buttonPressed(int)
-						 * @param buttonId the id of the button that was pressed
-						 *        (see <code>IDialogConstants.*_ID</code>
-						 *        constants)
-						 */
-						protected void buttonPressed(int buttonId) {
-							dontTipNext = btn.getSelection();
-							if (dontTipNext) {
-								QueryOptions.setMultiPageConfirm(false);
-								QueryOptions.savePref();
-							}
-							if (buttonId == 1) {
-								isEnd = true;
-							}
-							close();
-						}
-
-					};
-					int ret = dialog.open();
-					if (ret != 0 && ret != 1) {
-						isEnd = true;
-					}
-				}
-			}
-		});
 	}
 
 	/**
@@ -2077,14 +1991,10 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		tblResult.removeAll();
 		rsToItemMap.clear();
 
-		int begin = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize();
-		int last = begin + queryInfo.getPageSize();
-
 		List<Point> matchedPointList = new ArrayList<Point>();
 
 		int itemNo = 0;
-		int index = (queryInfo.getCurrentPage() - 1) * queryInfo.getPageSize() + 1;
-		for (int i = 0; allDataList != null && i < last && i < queryInfo.getTotalRs(); i++) {
+		for (int i = 0; allDataList != null && i < queryInfo.getTotalRs(); i++) {
 			Map<String, CellValue> dataMap = allDataList.get(i);
 
 			// filter the data
@@ -2095,7 +2005,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 			TableItem item = new TableItem(tblResult, SWT.MULTI);
 			rsToItemMap.put(""+item.hashCode(), ""+i);
-			item.setText(0, String.valueOf(index + i - begin));
+			item.setText(0, String.valueOf(i + 1));
 			item.setData(dataMap);
 			makeItemValue(item, dataMap);
 			item.setBackground(0, Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
@@ -2142,19 +2052,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		if (filterResultContrItem.isUseFilter()) {
 			selectableSupport.setSelection(matchedPointList);
 		}
-
-		tblResult.setTopIndex(begin);
-
-		//recover and display the inserted records which have not been committed yet.
-//		for (Map.Entry<String,Map<String,Object>> itemEntry : allInsertedItemList.entrySet()) {
-//			TableItem itemNew = new TableItem(tblResult, SWT.MULTI);
-//			changeInsertedItemStyle(itemNew);
-//			itemNew.setData(NEW_RECORD_FLAG, itemEntry.getKey());
-//			int colCount = tblResult.getColumnCount();
-//			for (int i = 1; i < colCount; i++) {
-//				itemNew.setText(i, "" + itemEntry.getValue().get("" + (i - 1)));
-//			}
-//		}
 
 		if (delRecordItem != null && !delRecordItem.isDisposed()) {
 			delRecordItem.setEnabled(false);

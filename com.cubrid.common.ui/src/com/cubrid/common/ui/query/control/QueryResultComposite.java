@@ -567,8 +567,6 @@ public class QueryResultComposite extends Composite implements ISubTabSelection 
 				rollbackModifiedItem.setEnabled(false);
 				result.clearModifiedLog();
 
-				QueryInfo queryInfo = result.getQueryInfo();
-				queryInfo.setCurrentPage(queryInfo.getCurrentPage());
 				result.makeItem();
 				result.updateActions();
 

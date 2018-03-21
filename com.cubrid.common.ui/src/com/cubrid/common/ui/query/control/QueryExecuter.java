@@ -192,7 +192,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private FilterResultContrItem filterResultContrItem;
 	private List<Map<String, CellValue>> allDataList = null;
 	private List<ColumnInfo> allColumnList = null;
-	private boolean isEnd = false;
 	private String queryMsg;
 	private String multiQuerySql = null;
 	private Map<String, ColumnComparator> colComparatorMap = null;
@@ -586,18 +585,10 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 */
 	private void fillTableItemData(CUBRIDResultSetProxy rs) throws SQLException {
 		cntRecord = 0;
-		int limit = recordLimit;
 		while (rs.next()) {
 			cntRecord++;
 			//add item data to the end of list
 			addTableItemData(rs, -1);
-			if (recordLimit > 0 && cntRecord >= limit && multiQuerySql == null) {
-				if (isEnd) {
-					break;
-				} else {
-					limit += recordLimit;
-				}
-			}
 		}
 		if (multiQuerySql == null) {
 			queryInfo = new QueryInfo(cntRecord);
@@ -1806,7 +1797,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		nf.setMaximumFractionDigits(3);
 		stmt = null;
 		rs = null;
-		boolean isHasError = false;
 
 		try {
 			beginTimestamp = System.currentTimeMillis();
@@ -1861,7 +1851,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			queryMsg += Messages.runError + event.getErrorCode() + StringUtil.NEWLINE + Messages.errorHead
 				+ event.getMessage() + StringUtil.NEWLINE;
 			query += sql + StringUtil.NEWLINE;
-			isHasError = true;
 			LOGGER.error("execute SQL failed sql at query editor: " + query
 					+ " error message: " + event.getMessage(), event);
 			throw event;
@@ -1870,12 +1859,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			QueryUtil.freeQuery(stmt, rs);
 			stmt = null;
 			rs = null;
-			if (!isHasError && cntRecord == recordLimit && recordLimit > 0) {
-				isEnd = false;
-				if (!isEnd) {
-					makeTable(end + 1, false);
-				}
-			}
 		}
 
 		return tuneModeModel;

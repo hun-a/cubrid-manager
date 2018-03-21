@@ -191,7 +191,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private Action lastPageAction = null;
 	private FilterResultContrItem filterResultContrItem;
 	private List<Map<String, CellValue>> allDataList = null;
-	private ResultSetDataCache resultSetDataCache;
 	private List<ColumnInfo> allColumnList = null;
 	private boolean isEnd = false;
 	private String queryMsg;
@@ -250,7 +249,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		allDataList = new ArrayList<Map<String, CellValue>>();
 		allColumnList = new ArrayList<ColumnInfo>();
 		colComparatorMap = new HashMap<String, ColumnComparator>();
-		resultSetDataCache = new ResultSetDataCache();
 		loadSize = QueryOptions.getLobLoadSize(serverInfo);
 
 		boolean isUseScientificNotation = QueryOptions.getUseScientificNotation(serverInfo);
@@ -349,7 +347,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 					columnType, elementType, precision, scale);
 			allColumnList.add(colInfo);
 		}
-		resultSetDataCache.setColumnInfos(new ArrayList<ColumnInfo>(allColumnList));
 	}
 
 	/**
@@ -594,7 +591,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			cntRecord++;
 			//add item data to the end of list
 			addTableItemData(rs, -1);
-			resultSetDataCache.AddData(BuildCurrentRowData(rs));
 			if (recordLimit > 0 && cntRecord >= limit && multiQuerySql == null) {
 				if (isEnd) {
 					break;
@@ -2443,7 +2439,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 */
 	public void dispose() {
 		disposeAll();
-		freeResultSetCache();
 	}
 	
 	private void disposeAll() {
@@ -3006,14 +3001,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		}
 		return successedMap;
 	}
-
-	private void freeResultSetCache(){
-		if(resultSetDataCache == null){
-			return;
-		}
-		resultSetDataCache.free();
-		resultSetDataCache = null;
-	}
 	
 	public String getQueryPlanLog() {
 		return queryPlanLog;
@@ -3313,9 +3300,5 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	public void setColumnTableNames(List<String> tableNames) {
 		this.columnTableNames = tableNames;
-	}
-	
-	public ResultSetDataCache getTableDataCache() {
-		return resultSetDataCache;
 	}
 }

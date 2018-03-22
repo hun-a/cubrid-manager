@@ -111,8 +111,6 @@ import com.cubrid.common.ui.cubrid.table.dialog.PstmtParameter;
 import com.cubrid.common.ui.query.Messages;
 import com.cubrid.common.ui.query.action.CopyAction;
 import com.cubrid.common.ui.query.action.InputMethodAction;
-import com.cubrid.common.ui.query.action.LastAction;
-import com.cubrid.common.ui.query.action.NextAction;
 import com.cubrid.common.ui.query.action.PasteAction;
 import com.cubrid.common.ui.query.action.ResultPageTopAction;
 import com.cubrid.common.ui.query.control.tunemode.TuneModeModel;
@@ -183,8 +181,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	private final QueryEditorPart queryEditor;
 	private QueryInfo queryInfo = null;
-	private Action nextPageAction = null;
-	private Action lastPageAction = null;
 	private Action resultCursorTopAction = null;
 	private FilterResultContrItem filterResultContrItem;
 	private List<Map<String, CellValue>> allDataList = null;
@@ -600,13 +596,8 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	public void makeActions(ToolBarManager toolBarManager, Table resultTable) {
 		toolBarManager.add(filterResultContrItem);
 		toolBarManager.add(new Separator());
-		lastPageAction = new LastAction(this);
-		nextPageAction = new NextAction(this);
 		resultCursorTopAction = new ResultPageTopAction(this);
-		toolBarManager.add(nextPageAction);
-		toolBarManager.add(lastPageAction);
 		toolBarManager.add(resultCursorTopAction);
-		updateActions();
 		toolBarManager.update(true);
 	}
 
@@ -614,25 +605,9 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * Set the action disabled
 	 */
 	private void disableActions() {
-		if (lastPageAction != null) {
-			lastPageAction.setEnabled(false);
-		}
-		if (nextPageAction != null) {
-			nextPageAction.setEnabled(false);
-		}
 		if (resultCursorTopAction != null) {
 			resultCursorTopAction.setEnabled(false);
 		}
-	}
-
-	/**
-	 * Update paged action state
-	 */
-	public void updateActions() {
-		// TODO This action need to delete.
-		lastPageAction.setEnabled(true);
-		nextPageAction.setEnabled(true);
-		resultCursorTopAction.setEnabled(true);
 	}
 
 	/**
@@ -1030,8 +1005,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 				makeResult(prs);
 				makeItem();
-				updateActions();
-
 			}
 		} catch (final Exception ee) {
 			LOGGER.error("execute SQL failed sql  at query editor : " + query + " error message: " + ee);
@@ -1720,7 +1693,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 					Collections.sort(allDataList, comparator);
 					comparator.setAsc(!comparator.isAsc());
 					makeItem();
-					updateActions();
 
 					column.pack();
 					if (column.equals(sortedColumn)) {

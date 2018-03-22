@@ -384,7 +384,6 @@ public class FilterResultContrItem extends ControlContribution {
 
 		qe.setFilterSetting(filterSetting);
 		qe.makeItem();
-		qe.updateActions();
 	}
 
 	/**

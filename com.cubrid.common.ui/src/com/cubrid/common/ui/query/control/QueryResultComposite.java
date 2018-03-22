@@ -568,7 +568,6 @@ public class QueryResultComposite extends Composite implements ISubTabSelection 
 				result.clearModifiedLog();
 
 				result.makeItem();
-				result.updateActions();
 
 				result.swRecordItem.setSelection(false);
 				result.insertRecordItem.setEnabled(false);

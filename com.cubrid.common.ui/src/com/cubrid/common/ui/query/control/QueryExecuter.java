@@ -114,6 +114,7 @@ import com.cubrid.common.ui.query.action.InputMethodAction;
 import com.cubrid.common.ui.query.action.LastAction;
 import com.cubrid.common.ui.query.action.NextAction;
 import com.cubrid.common.ui.query.action.PasteAction;
+import com.cubrid.common.ui.query.action.ResultPageTopAction;
 import com.cubrid.common.ui.query.control.tunemode.TuneModeModel;
 import com.cubrid.common.ui.query.dialog.ExportResultDialog;
 import com.cubrid.common.ui.query.dialog.RowDetailDialog;
@@ -184,6 +185,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private QueryInfo queryInfo = null;
 	private Action nextPageAction = null;
 	private Action lastPageAction = null;
+	private Action resultCursorTopAction = null;
 	private FilterResultContrItem filterResultContrItem;
 	private List<Map<String, CellValue>> allDataList = null;
 	private List<ColumnInfo> allColumnList = null;
@@ -600,8 +602,10 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		toolBarManager.add(new Separator());
 		lastPageAction = new LastAction(this);
 		nextPageAction = new NextAction(this);
+		resultCursorTopAction = new ResultPageTopAction(this);
 		toolBarManager.add(nextPageAction);
 		toolBarManager.add(lastPageAction);
+		toolBarManager.add(resultCursorTopAction);
 		updateActions();
 		toolBarManager.update(true);
 	}
@@ -616,6 +620,9 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		if (nextPageAction != null) {
 			nextPageAction.setEnabled(false);
 		}
+		if (resultCursorTopAction != null) {
+			resultCursorTopAction.setEnabled(false);
+		}
 	}
 
 	/**
@@ -625,6 +632,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		// TODO This action need to delete.
 		lastPageAction.setEnabled(true);
 		nextPageAction.setEnabled(true);
+		resultCursorTopAction.setEnabled(true);
 	}
 
 	/**

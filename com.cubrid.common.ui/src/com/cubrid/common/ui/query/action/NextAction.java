@@ -32,7 +32,6 @@ import org.eclipse.jface.action.Action;
 import com.cubrid.common.ui.CommonUIPlugin;
 import com.cubrid.common.ui.query.Messages;
 import com.cubrid.common.ui.query.control.QueryExecuter;
-import com.cubrid.common.ui.query.control.QueryInfo;
 import com.cubrid.common.ui.spi.util.CommonUITool;
 
 /**
@@ -73,7 +72,6 @@ public class NextAction extends
 			executer.tblResult.forceFocus();
 		}
 
-		QueryInfo queryInfo = executer.getQueryInfo();
 		executer.makeItem();
 		executer.updateActions();
 	}

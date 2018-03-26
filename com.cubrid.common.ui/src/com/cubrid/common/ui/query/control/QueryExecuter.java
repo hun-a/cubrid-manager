@@ -111,6 +111,7 @@ import com.cubrid.common.ui.cubrid.table.dialog.PstmtParameter;
 import com.cubrid.common.ui.query.Messages;
 import com.cubrid.common.ui.query.action.CopyAction;
 import com.cubrid.common.ui.query.action.InputMethodAction;
+import com.cubrid.common.ui.query.action.NextQueryAction;
 import com.cubrid.common.ui.query.action.PasteAction;
 import com.cubrid.common.ui.query.action.ResultPageTopAction;
 import com.cubrid.common.ui.query.control.tunemode.TuneModeModel;
@@ -182,6 +183,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private final QueryEditorPart queryEditor;
 	private QueryInfo queryInfo = null;
 	private Action resultCursorTopAction = null;
+	private Action nextQueryAction = null;
 	private FilterResultContrItem filterResultContrItem;
 	private List<Map<String, CellValue>> allDataList = null;
 	private List<ColumnInfo> allColumnList = null;
@@ -597,7 +599,9 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		toolBarManager.add(filterResultContrItem);
 		toolBarManager.add(new Separator());
 		resultCursorTopAction = new ResultPageTopAction(this);
+		nextQueryAction = new NextQueryAction(this);
 		toolBarManager.add(resultCursorTopAction);
+		toolBarManager.add(nextQueryAction);
 		toolBarManager.update(true);
 	}
 
@@ -607,6 +611,9 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private void disableActions() {
 		if (resultCursorTopAction != null) {
 			resultCursorTopAction.setEnabled(false);
+		}
+		if (nextQueryAction != null) {
+			nextQueryAction.setEnabled(false);
 		}
 	}
 
@@ -3258,5 +3265,13 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	public void setColumnTableNames(List<String> tableNames) {
 		this.columnTableNames = tableNames;
+	}
+
+	public int getRecordLimit() {
+		return recordLimit;
+	}
+
+	public int getCurrentTblTotalCount() {
+		return tblResult.getItemCount();
 	}
 }

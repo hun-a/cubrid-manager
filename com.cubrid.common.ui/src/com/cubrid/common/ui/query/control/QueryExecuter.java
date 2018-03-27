@@ -166,6 +166,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private static final Color BLUE_COLOR = ResourceManager.getColor(0, 0, 255);
 	private final int recordLimit;
 	public String query = "";
+	private String rownumQuery;
 	public final String orignQuery;
 	public int idx;
 	public int cntRecord = 0;
@@ -1764,13 +1765,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * @throws SQLException if failed
 	 */
 	public TuneModeModel makeTable(int start, boolean useTuneMode) throws SQLException {
-		int end = start + recordLimit - 1;
-		String sql = multiQuerySql;
-		if (multiQuerySql.indexOf(SqlParser.ROWNUM_CONDITION_MARK) != -1) {
-			sql = this.multiQuerySql.replace(SqlParser.ROWNUM_CONDITION_MARK,
-				"\r\nWHERE ROWNUM BETWEEN " + String.valueOf(start) + " AND " + String.valueOf(end));
-		}
-
+		String sql = handleRownumQuery(multiQuerySql, start);
 		TuneModeModel tuneModeModel = null;
 		long beginTimestamp = 0;
 		long endTimestamp = 0;
@@ -1844,6 +1839,22 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		}
 
 		return tuneModeModel;
+	}
+
+	private String handleRownumQuery(String sql, int start) {
+		if (sql.indexOf(SqlParser.ROWNUM_CONDITION_MARK) != -1) {
+			saveRownumQuery(sql);
+			return sql.replace(
+					SqlParser.ROWNUM_CONDITION_MARK, "\r\nWHERE ROWNUM BETWEEN " +
+							String.valueOf(start) + " AND " +
+							String.valueOf(start + recordLimit - 1));
+		} else {
+			return sql;
+		}
+	}
+
+	private void saveRownumQuery(String sql) {
+		rownumQuery = rownumQuery != sql ? sql : rownumQuery;
 	}
 
 	private void recordSQLDetail(String elapseTime, String info) {

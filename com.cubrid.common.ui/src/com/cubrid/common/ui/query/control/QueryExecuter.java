@@ -607,18 +607,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	}
 
 	/**
-	 * Set the action disabled
-	 */
-	private void disableActions() {
-		if (resultCursorTopAction != null) {
-			resultCursorTopAction.setEnabled(false);
-		}
-		if (nextQueryAction != null) {
-			nextQueryAction.setEnabled(false);
-		}
-	}
-
-	/**
 	 * Make query editor result panel,including table panel and sql text and
 	 * message text
 	 *
@@ -1917,6 +1905,11 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * make table item by the data in allDataList
 	 */
 	public void makeItem() {
+		findPK();
+		processResultTable(true);
+	}
+
+	private void findPK() {
 		isSingleTableQuery = false;
 
 		if (!queryEditor.isCollectExecStats()) {
@@ -1945,27 +1938,27 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 						}
 					}
 				}
-
-				if (matchedCnt > 0 && matchedCnt == pkList.size()) {
-					isContainPrimayKey = true;
-				} else {
-					isContainPrimayKey = false;
-				}
+				isContainPrimayKey = matchedCnt > 0 && matchedCnt == pkList.size() ? true : false;
 			}
 		}
+	}
 
+	private void processResultTable(boolean isNew) {
 		if (insertRecordItem != null && !insertRecordItem.isDisposed()) {
 			insertRecordItem.setEnabled(getEditable() && isEditMode());
 		}
 
-		disableActions();
+		if (isNew) {
+			tblResult.removeAll();
+		}
+
 		clearModifiedLog();
-		tblResult.removeAll();
 		rsToItemMap.clear();
 
 		List<Point> matchedPointList = new ArrayList<Point>();
-
+		final int indexGap = isNew ? 0 : getCurrentTblTotalCount();
 		int itemNo = 0;
+
 		for (int i = 0; allDataList != null && i < queryInfo.getTotalRs(); i++) {
 			Map<String, CellValue> dataMap = allDataList.get(i);
 
@@ -1977,7 +1970,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 			TableItem item = new TableItem(tblResult, SWT.MULTI);
 			rsToItemMap.put(""+item.hashCode(), ""+i);
-			item.setText(0, String.valueOf(i + 1));
+			item.setText(0, String.valueOf(indexGap + i + 1));
 			item.setData(dataMap);
 			makeItemValue(item, dataMap);
 			item.setBackground(0, Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
@@ -2117,6 +2110,11 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		}
 
 		return StringUtil.isEqual(value0.getShowValue(), value1.getShowValue());
+	}
+
+	public void makeItemWithoutReset() {
+		findPK();
+		processResultTable(false);
 	}
 
 	public boolean getEditable() {
@@ -3284,5 +3282,18 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 	public int getCurrentTblTotalCount() {
 		return tblResult.getItemCount();
+	}
+
+	public void runNextQuery() throws SQLException {
+		int start = getCurrentTblTotalCount() + 1;
+		allDataList.clear();
+		makeTable(start, queryEditor.isCollectExecStats());
+		if (cntRecord != 0) {
+			makeItemWithoutReset();
+		} else {
+			// open the dialog and tell to user it is end.
+			System.out.println("This is end");
+			nextQueryAction.setEnabled(false);
+		}
 	}
 }

@@ -218,6 +218,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	private boolean isContainPrimayKey;
 	private boolean isSingleTableQuery;
 	private int loadSize = 0;
+	private boolean showEndDialog = true;
 
 	private String statsLog;
 	private String queryPlanLog;
@@ -3291,9 +3292,11 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		if (cntRecord != 0) {
 			makeItemWithoutReset();
 		} else {
-			// open the dialog and tell to user it is end.
-			System.out.println("This is end");
-			nextQueryAction.setEnabled(false);
+			if (showEndDialog) {
+				CommonUITool.openInformationBox(Messages.noMoreRecord);
+				showEndDialog = false;
+				nextQueryAction.setEnabled(false);
+			}
 		}
 	}
 }

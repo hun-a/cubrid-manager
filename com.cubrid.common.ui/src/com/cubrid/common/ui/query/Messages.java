@@ -726,6 +726,8 @@ public class Messages extends
 
 	public static String errQeditNotOpenForConnectionFull;
 
+	public static String noMoreRecord;
+
 	static {
 		NLS.initializeMessages(CommonUIPlugin.PLUGIN_ID + ".query.Messages",
 				Messages.class);

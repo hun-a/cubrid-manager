@@ -619,19 +619,6 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			StyledText messageText, boolean multiQueryResult) {
 		this.selectableSupport = tableSelectSupport;
 		this.tblResult = tableSelectSupport.getTable();
-		logMessageText = messageText;
-		int[] queryInfoRange = new int[2];
-		int[] queryRange = new int[2];
-		StringBuilder resultMessage = new StringBuilder();
-		resultMessage.append(getQueryMsg() == null ? "" : getQueryMsg().trim());
-		queryInfoRange[0] = 0;
-		queryInfoRange[1] = resultMessage.length();
-		resultMessage.append(StringUtil.NEWLINE)
-				.append(QueryUtil.SPLIT_LINE_FOR_QUERY_RESULT)
-				.append(StringUtil.NEWLINE);
-		queryRange[0] = resultMessage.length();
-		resultMessage.append(query);
-		queryRange[1] = query.length();
 
 		ServerInfo serverInfo = database.getServer() == null ? null
 				: database.getServer().getServerInfo();
@@ -674,6 +661,24 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 
 		makeColumn();
 		makeItem();
+		processLogs(messageText);
+	}
+
+	private void processLogs(StyledText messageText) {
+		logMessageText = messageText = messageText == null ? logMessageText : messageText;
+		int[] queryInfoRange = new int[2];
+		int[] queryRange = new int[2];
+		StringBuilder resultMessage = new StringBuilder();
+		resultMessage.append(getQueryMsg() == null ? "" : getQueryMsg().trim());
+		queryInfoRange[0] = 0;
+		queryInfoRange[1] = resultMessage.length();
+		resultMessage.append(StringUtil.NEWLINE)
+				.append(QueryUtil.SPLIT_LINE_FOR_QUERY_RESULT)
+				.append(StringUtil.NEWLINE);
+		queryRange[0] = resultMessage.length();
+		resultMessage.append(query);
+		queryRange[1] = query.length();
+
 
 		if (!StringUtil.isEmpty(queryPlanLog)) {
 			resultMessage.append(StringUtil.NEWLINE).append(
@@ -3291,6 +3296,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		makeTable(start, queryEditor.isCollectExecStats());
 		if (cntRecord != 0) {
 			makeItemWithoutReset();
+			processLogs(null);
 		} else {
 			if (showEndDialog) {
 				CommonUITool.openInformationBox(Messages.noMoreRecord);

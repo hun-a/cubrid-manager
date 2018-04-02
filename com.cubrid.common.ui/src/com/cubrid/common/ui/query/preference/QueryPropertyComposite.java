@@ -37,6 +37,7 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FontDialog;
@@ -65,11 +66,9 @@ import com.cubrid.cubridmanager.core.common.model.ServerInfo;
  */
 public class QueryPropertyComposite extends
 		Composite {
-
 	private Button searchUnitBtn;
-	private Spinner unitCountSpinner;
+	private Combo unitCountCombo;
 	private Spinner loadSizeSpinner;
-//	private Button oidBtn;
 	private final CubridServer server;
 	protected int fontColorBlue;
 	protected int fontColorGreen;
@@ -105,7 +104,7 @@ public class QueryPropertyComposite extends
 		fontColorGreen = QueryOptions.getFontColorGreen(serverInfo);
 		fontString = QueryOptions.getFontString(serverInfo);
 
-		unitCountSpinner.setSelection(recordCount);
+		unitCountCombo.setText(Integer.toString(recordCount));
 		loadSizeSpinner.setSelection(loadSize);
 
 		keywordLowerBtn.setSelection(isKeywordLowerCase);
@@ -148,7 +147,7 @@ public class QueryPropertyComposite extends
 	 */
 	public void save() {
 		ServerInfo serverInfo = server == null ? null : server.getServerInfo();
-		int unitCount = unitCountSpinner.getSelection();
+		int unitCount = Integer.parseInt(unitCountCombo.getText());
 		int loadSize = loadSizeSpinner.getSelection();
 
 		boolean isKeywordLowercase = keywordLowerBtn.getSelection();
@@ -209,17 +208,16 @@ public class QueryPropertyComposite extends
 			 * @param event an event containing information about the selection
 			 */
 			public void widgetSelected(SelectionEvent event) {
-				unitCountSpinner.setEnabled(searchUnitBtn.getSelection());
+				unitCountCombo.setEnabled(searchUnitBtn.getSelection());
 			}
 
 		});
-		unitCountSpinner = new Spinner(groupFirst, SWT.BORDER);
-		unitCountSpinner.setMaximum(2147483647);
+		unitCountCombo = new Combo(groupFirst, SWT.READ_ONLY);
+		unitCountCombo.setItems(new String[] { "100", "200", "500", "1000", "2000", "5000" });
 		final GridData gdUnitCountSpinner = new GridData(SWT.RIGHT, SWT.CENTER,
 				false, false);
 		gdUnitCountSpinner.widthHint = 129;
-		unitCountSpinner.setLayoutData(gdUnitCountSpinner);
-		unitCountSpinner.setIncrement(100);
+		unitCountCombo.setLayoutData(gdUnitCountSpinner);
 
 		final Label lobSizeLabel = new Label(groupFirst, SWT.NONE);
 		lobSizeLabel.setText(Messages.lblLobLoadSize);

@@ -1210,4 +1210,8 @@ public final class QueryOptions {
 
 		return getDBMapKey(dbUser, dbName, address, port, serverName, isCMMode);
 	}
+
+	public static boolean isExistPrefix(ServerInfo serverInfo) {
+		return getPrefix(serverInfo) != null ? true : false;
+	}
 }

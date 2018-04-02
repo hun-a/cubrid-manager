@@ -240,8 +240,8 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		this.orignQuery = orignQuery;
 		this.connection = con;
 		ServerInfo serverInfo = cubridDatabase.getServer() == null ? null : cubridDatabase.getServer().getServerInfo();
-		filterResultContrItem = new FilterResultContrItem(this, 0);
-		recordLimit = QueryOptions.getSearchUnitCount(serverInfo);
+		recordLimit = QueryOptions.isExistPrefix(serverInfo) ? QueryOptions.getSearchUnitCount(serverInfo) : QueryOptions.getSearchUnitCount(null);
+		filterResultContrItem = new FilterResultContrItem(this, recordLimit);
 		allDataList = new ArrayList<Map<String, CellValue>>();
 		allColumnList = new ArrayList<ColumnInfo>();
 		colComparatorMap = new HashMap<String, ColumnComparator>();

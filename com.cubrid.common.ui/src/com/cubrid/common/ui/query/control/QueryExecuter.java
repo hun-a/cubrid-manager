@@ -1759,7 +1759,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * @throws SQLException if failed
 	 */
 	public TuneModeModel makeTable(int start, boolean useTuneMode) throws SQLException {
-		String sql = handleRownumQuery(multiQuerySql, start);
+		String sql = multiQuerySql != null ? handleRownumQuery(multiQuerySql, start) : query;
 		TuneModeModel tuneModeModel = null;
 		long beginTimestamp = 0;
 		long endTimestamp = 0;
@@ -1867,8 +1867,10 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		} catch(Exception e) {
 			LOGGER.error("parse execute sql time error", e);
 		}
-		sqlDetailHistory.setExecuteInfo(info);
-		sqlDetailHistory.setElapseTime(elapseTime);
+		if (sqlDetailHistory != null) {
+			sqlDetailHistory.setExecuteInfo(info);
+			sqlDetailHistory.setElapseTime(elapseTime);
+		}
 	}
 
 	/**

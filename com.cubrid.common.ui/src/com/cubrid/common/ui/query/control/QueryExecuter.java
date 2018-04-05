@@ -1759,7 +1759,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 	 * @throws SQLException if failed
 	 */
 	public TuneModeModel makeTable(int start, boolean useTuneMode) throws SQLException {
-		String sql = multiQuerySql != null ? handleRownumQuery(multiQuerySql, start) : query;
+		String sql = isLimitedSql() ? handleRownumQuery(multiQuerySql, start) : query;
 		TuneModeModel tuneModeModel = null;
 		long beginTimestamp = 0;
 		long endTimestamp = 0;
@@ -1871,6 +1871,10 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 			sqlDetailHistory.setExecuteInfo(info);
 			sqlDetailHistory.setElapseTime(elapseTime);
 		}
+	}
+
+	private boolean isLimitedSql() {
+		return multiQuerySql != null;
 	}
 
 	/**
@@ -3296,7 +3300,7 @@ public class QueryExecuter implements IShowMoreOperator{ // FIXME very complicat
 		int start = getCurrentTblTotalCount() + 1;
 		allDataList.clear();
 		makeTable(start, queryEditor.isCollectExecStats());
-		if (cntRecord != 0) {
+		if (isLimitedSql() && cntRecord != 0) {
 			makeItemWithoutReset();
 			processLogs(null);
 		} else {

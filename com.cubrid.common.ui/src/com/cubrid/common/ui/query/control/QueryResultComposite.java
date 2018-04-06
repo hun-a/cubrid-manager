@@ -67,17 +67,14 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.ProgressBar;
-import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
-import org.slf4j.Logger;
 
 import com.cubrid.common.core.util.CompatibleUtil;
 import com.cubrid.common.core.util.DateUtil;
-import com.cubrid.common.core.util.LogUtil;
 import com.cubrid.common.core.util.QueryUtil;
 import com.cubrid.common.core.util.StringUtil;
 import com.cubrid.common.ui.CommonUIPlugin;
@@ -106,7 +103,6 @@ import com.cubrid.cubridmanager.core.cubrid.table.model.DataType;
  * @author wangsl 2009-3-11
  */
 public class QueryResultComposite extends Composite implements ISubTabSelection {
-	private static final Logger LOGGER = LogUtil.getLogger(QueryResultComposite.class);
 	private static final int SASH_WIDTH = 2;
 	private static final long STOP_CONNECT_TIMEOUT_MSEC = 30000;
 
@@ -344,21 +340,6 @@ public class QueryResultComposite extends Composite implements ISubTabSelection 
 			tableData.right = new FormAttachment(100,0);
 			resultTable.setLayoutData(tableData);
 		}
-
-		final ScrollBar scrollBar = resultTable.getVerticalBar();
-		scrollBar.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				int end = scrollBar.getMaximum() - scrollBar.getThumb();
-				if (end == scrollBar.getSelection()) {
-					try {
-						result.runNextQuery();
-					} catch (SQLException e1) {
-						LOGGER.error(e1.getMessage());
-					}
-				}
-			}
-		});
 
 		final SashForm logSash = new SashForm(tableLogSash, SWT.HORIZONTAL);
 		logSash.SASH_WIDTH = SASH_WIDTH;
